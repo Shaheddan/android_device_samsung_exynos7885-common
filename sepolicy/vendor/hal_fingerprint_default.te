@@ -3,3 +3,17 @@ typeattribute hal_fingerprint_default data_between_core_and_vendor_violators;
 allow hal_fingerprint_default self:netlink_socket { bind create write read };
 allow hal_fingerprint_default uhid_device:chr_file rw_file_perms;
 
+# Optical fingerprint illumination. Without the dir permissions below,
+# glob("/sys/devices/platform/*/fingerprint_illum") cannot opendir the DECON
+# platform directory, returns zero matches, and the HAL logs
+# "fingerprint illum node: NOT FOUND" on every single call. The node exists and
+# the pattern is correct - it is purely the missing allow. That is why the panel
+# was never lit and the trustlet rejected every frame with BAD_QUALITY 39.
+# Read-only on sysfs_decon, so this stays inside the r_fs_type neverallow.
+allow hal_fingerprint_default sysfs_decon:dir { search getattr open read };
+
+# The two writable attributes. These carry rw_fs_type (see public/file.te), which
+# is what keeps the platform neverallow satisfied.
+allow hal_fingerprint_default sysfs_fingerprint_illum:file rw_file_perms;
+allow hal_fingerprint_default sysfs_lcd_writable:file rw_file_perms;
+

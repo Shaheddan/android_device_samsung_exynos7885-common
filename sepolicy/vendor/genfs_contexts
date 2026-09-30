@@ -60,6 +60,15 @@ genfscon sysfs /devices/platform/13500000.dwmmc0/mmc_host/mmc0                  
 genfscon sysfs /devices/platform/14870000.dsim/backlight/panel                    u:object_r:sysfs_graphics:s0
 genfscon sysfs /devices/platform/14a50000.abox/service                            u:object_r:sysfs_abox_writable:s0
 genfscon sysfs /devices/platform/14860000.decon_f                                 u:object_r:sysfs_decon:s0
+# Fingerprint illumination knob. Needs its own writable type so the HAL may drive
+# it - see sysfs_fingerprint_illum in public/file.te.
+genfscon sysfs /devices/platform/14860000.decon_f/fingerprint_illum               u:object_r:sysfs_fingerprint_illum:s0
+# The mask LEVEL is a separate attribute from the knob. The knob only arms the
+# path (decon_get_mask_layer reads force_mask_layer); the level is
+# lcd->mask_brightness, and its 255 default is a value A71 documents as breaking
+# enrollment. 337 is required. /class/lcd/panel had no genfscon at all in this
+# tree, so this attribute was plain sysfs; reuse the existing sysfs_lcd_writable.
+genfscon sysfs /class/lcd/panel/mask_brightness                                  u:object_r:sysfs_lcd_writable:s0
 genfscon sysfs /devices/platform/14410000.fimc_is_sensor/video4linux              u:object_r:sysfs_v4l_fimc:s0
 genfscon sysfs /devices/platform/14430000.fimc_is_sensor/video4linux              u:object_r:sysfs_v4l_fimc:s0
 genfscon sysfs /devices/platform/14400000.fimc_is_sensor/video4linux              u:object_r:sysfs_v4l_fimc:s0

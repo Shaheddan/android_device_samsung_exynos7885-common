@@ -11,6 +11,14 @@ type sysfs_abox_writable, sysfs_type, rw_fs_type, fs_type;
 type sysfs_input_writable, sysfs_type, rw_fs_type, fs_type;
 type sysfs_camera, fs_type, sysfs_type, mlstrustedobject;
 type sysfs_decon, sysfs_type, r_fs_type, fs_type;
+# DPU fingerprint illumination knob. Declared rw_fs_type on purpose: the platform
+# neverallow is "neverallow { domain -vendor_init -ueventd } r_fs_type:file write",
+# so a write allow on sysfs_decon itself is impossible. A dedicated type carrying
+# rw_fs_type is the pattern every other writable sysfs node in this tree uses
+# (sysfs_lcd_writable, sysfs_battery_writable, sysfs_touchscreen_writable).
+# Created by the kernel with device_create_file() from decon_dsi.c, so the node
+# would otherwise inherit sysfs_decon from its parent device directory.
+type sysfs_fingerprint_illum, sysfs_type, rw_fs_type, fs_type;
 type sysfs_socinfo, sysfs_type, r_fs_type, fs_type;
 type sysfs_v4l_mfc, sysfs_type, r_fs_type, fs_type;
 type sysfs_v4l_smfc, sysfs_type, r_fs_type, fs_type;

@@ -64,6 +64,29 @@ on post-fs-data
 # TEEGRIS service
     mkdir /data/vendor/tee 0700 system system
 
+# Optical fingerprint HAL storage. android.hardware.biometrics.fingerprint-service
+# runs as uid 1000 and reads its own calibration from here. If this tree is not
+# system:system every read fails and the HAL reports only a bare errno:
+#     E/bauth_FPBAuthServiceStorage: FPBAuthServiceStorage::readCALIBRATIONMetaData
+#     fileopen error : 13
+# 13 is EACCES, and because readMetaData() has no access() pre-check it is
+# indistinguishable from a missing file in the log. The failure then looks like a
+# sensor fault and is not one - it cost a whole diagnosis wave to tell apart.
+# These are init actions rather than a helper script on purpose: a service would
+# have to exec a file, and a file installed into /vendor/bin comes out labelled
+# u:object_r:vendor_file:s0, which init refuses to run
+# ("no domain transition from u:r:init:s0").
+    mkdir /data/vendor/biometrics 0700 system system
+    mkdir /data/vendor/biometrics/meta 0700 system system
+    mkdir /data/vendor/biometrics/type 0700 system system
+    mkdir /data/vendor/biometrics/info 0700 system system
+    mkdir /data/vendor/biometrics/fp 0700 system system
+    chown system system /data/vendor/biometrics
+    chown system system /data/vendor/biometrics/meta
+    chown system system /data/vendor/biometrics/type
+    chown system system /data/vendor/biometrics/info
+    chown system system /data/vendor/biometrics/fp
+
 # Log data folder
     mkdir /data/vendor 0771 root system
     mkdir /data/vendor/log 0771 root system
