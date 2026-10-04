@@ -87,6 +87,29 @@ on post-fs-data
     chown system system /data/vendor/biometrics/info
     chown system system /data/vendor/biometrics/fp
 
+# Per-user HAL storage. Session::Session (aidl Fingerprint::createSession) hands
+# libbauthserver exactly this path:
+#     snprintf(buf, 64, "/data/vendor/biometrics/fp/User_%d/", userId);
+#     LegacyHAL->vtable[20](userId, buf);              <-- set_active_group
+# Nothing in libbauthserver ever creates it. The only mkdir() on the request
+# path builds ".../biometrics/ta/" (BAuthService::request, mode 0700), and
+# FPBAuthService::sensortest builds its own sensor-test dir. android::MakeFullDir
+# at 0x288d0 is the only recursive helper and neither path calls it. So the tree
+# below stops one level short of the one directory the HAL actually needs.
+# Why that is fatal: FPBAuthService::get_user_id treats m_active_group == -1 as
+# "never set" and then builds no User_%d path at all
+# ("get_user_id m_active_group error"), and BAuthService::enroll gates on
+#     core_gid != <framework gid>  ->  "enroll gid != m_active_group %d, %d"
+# returning -1 synchronously, before the sensor is touched. That accounts for the
+# whole symptom set: count 0, State 0, no capture, no illumination. It is also
+# unrecoverable on its own, because the directory is created opportunistically by
+# whichever request() happens to run first, and after a /data format no new
+# "user added" event ever fires for the existing owner.
+# 0700 system:system because the HAL runs as uid 1000 (AID_SYSTEM). Idempotent:
+# an init mkdir on an existing directory is a no-op, so this is safe every boot.
+    mkdir /data/vendor/biometrics/fp/User_0 0700 system system
+    chown system system /data/vendor/biometrics/fp/User_0
+
 # Log data folder
     mkdir /data/vendor 0771 root system
     mkdir /data/vendor/log 0771 root system
