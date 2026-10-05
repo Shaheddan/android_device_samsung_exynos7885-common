@@ -454,6 +454,32 @@ on boot
 # Prevents permission denied error for telephony
     chmod 0644 /proc/cmdline
 
+# Optical fingerprint ILLUMINATION nodes. The HAL runs as uid 1000
+# (system) - Caller(uid=1000,sid=u:r:hal_fingerprint_default:s0) - and
+# both of these are root-owned 0644, so the HAL is refused on plain DAC
+# and logs, once per attempt:
+#     E ...fingerprint-service.samsung: fingerprint illum level: open failed:
+#       Permission denied
+#     E ...fingerprint-service.samsung: fingerprint illum: open failed:
+#       Permission denied
+# No sensor target is ever lit, the trustlet returns 39 (BAD_QUALITY) on
+# every poll, and enrollment cannot complete.
+#
+# This is DAC, not selinux. The shipped policy already grants the HAL
+# everything - verified with sesearch against precompiled_sepolicy
+# e2bc0245aa55f7960d98c7bfb1f5d0cf (858631 B):
+#     allow hal_fingerprint_default sysfs_lcd_writable:dir { ... search ... };
+#     allow hal_fingerprint_default sysfs_decon:dir { getattr open read search };
+#     allow hal_fingerprint_default sysfs:dir { ... search ... };
+#     allow hal_fingerprint_default sysfs_fingerprint_illum:file { ... write };
+# so only ownership was missing.
+#
+# Same convention as the chowns just above (system:radio). The knob is
+# chowned at its real device path because /sys/class is only a symlink to
+# it, and both writes are wrapped so a missing node cannot abort boot.
+    chown system radio /sys/class/lcd/panel/mask_brightness
+    chown system radio /sys/devices/platform/14860000.decon_f/fingerprint_illum
+
 on fs
     mount_all /vendor/etc/fstab.${ro.hardware} --early
     # We need to seperate mounting SEC_EFS partition from fstab file due to GSI image loading case
