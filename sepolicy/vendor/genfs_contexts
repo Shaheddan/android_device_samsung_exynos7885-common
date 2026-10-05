@@ -68,6 +68,15 @@ genfscon sysfs /devices/platform/14860000.decon_f/fingerprint_illum             
 # lcd->mask_brightness, and its 255 default is a value A71 documents as breaking
 # enrollment. 337 is required. /class/lcd/panel had no genfscon at all in this
 # tree, so this attribute was plain sysfs; reuse the existing sysfs_lcd_writable.
+# REAL PATH, not the /sys/class symlink: /sys/class/lcd/panel is a SYMLINK and genfscon never
+# matches a /sys/class alias. Measured with readlink -f:
+#     /sys/devices/platform/14870000.dsim/lcd/panel/mask_brightness
+# With only the /class form below, the node stayed u:object_r:sysfs:s0
+# and the HAL logged "fingerprint illum level: open failed: Permission
+# denied", so the existing allow on sysfs_lcd_writable granted nothing
+# and enrollment died at FindSensor with trustlet code 39 (BAD_QUALITY)
+# after six ~750ms polls.
+genfscon sysfs /devices/platform/14870000.dsim/lcd/panel/mask_brightness     u:object_r:sysfs_lcd_writable:s0
 genfscon sysfs /class/lcd/panel/mask_brightness                                  u:object_r:sysfs_lcd_writable:s0
 genfscon sysfs /devices/platform/14410000.fimc_is_sensor/video4linux              u:object_r:sysfs_v4l_fimc:s0
 genfscon sysfs /devices/platform/14430000.fimc_is_sensor/video4linux              u:object_r:sysfs_v4l_fimc:s0
