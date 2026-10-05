@@ -17,3 +17,16 @@ allow hal_fingerprint_default sysfs_decon:dir { search getattr open read };
 allow hal_fingerprint_default sysfs_fingerprint_illum:file rw_file_perms;
 allow hal_fingerprint_default sysfs_lcd_writable:file rw_file_perms;
 
+# Traverse to the mask level node. sesearch over the shipped
+# precompiled_sepolicy (d4feaa7bc943725d415962d7555f533c) shows this domain
+# had NO sysfs_lcd_writable:dir permission at all, while init,
+# vendor_init, vold and hal_sensors_default all do. The file permission
+# above is not sufficient: the containing directory is plain sysfs, and
+# SELinux needs search on the target's own parent type to traverse into it.
+# Without this the HAL logs
+#   fingerprint illum level: open failed: Permission denied
+#   fingerprint illum: open failed: Permission denied
+# and no sensor target is ever lit, so enrollment cannot complete.
+# Read-only traversal on purpose - nothing here needs create/rename.
+allow hal_fingerprint_default sysfs_lcd_writable:dir { getattr ioctl lock open read search watch watch_reads };
+
