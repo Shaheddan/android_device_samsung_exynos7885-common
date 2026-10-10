@@ -30,3 +30,27 @@ allow hal_fingerprint_default sysfs_lcd_writable:file rw_file_perms;
 # Read-only traversal on purpose - nothing here needs create/rename.
 allow hal_fingerprint_default sysfs_lcd_writable:dir { getattr ioctl lock open read search watch watch_reads };
 
+
+# EFS calibration read. FPBAuthService::getCalibFromEFS (libbauthserver.so @
+# 0x56384) does access("efs/biometrics/meta/egis_calibration_data.bin", F_OK)
+# from cwd / and falls back to the same path under /efs. Stock policy grants
+# this domain efs_file:dir {getattr search}, efs_file:file/lnk_file r_file_perms
+# and sec_efs_file:dir/file/lnk_file - the Lineage base dropped every one of
+# them, so under Enforcing the check fails with EACCES (strace, 2026-10-09,
+# faccessat AT_FDCWD "efs/biometrics/meta/egis_calibration_data.bin"), the HAL
+# logs the misleading "readCalibDataInEFS isn't exist" (it is a permission
+# denial, not a missing file), rc=265, and getCalibFromEFS fails fatally:
+# enrollment cannot complete after a /data format. Causal proof: a permissive
+# A/B (fp_perm.sh) flipped only setenforce, the read then succeeded and
+# storeMetaData self-healed calib.dat + egoptbds.dat into
+# /data/vendor/biometrics/meta; Enforcing restored -> fails again.
+# Read-only on purpose: the HAL never writes EFS (writeCALIBRATIONMetaData and
+# writeCIDEFSMetaData target /data, already covered by
+# biometrics_vendor_data_file; the blobs themselves are trustlet-written), and
+# the /data self-heal write side needs no new rule.
+allow hal_fingerprint_default efs_file:dir { getattr search };
+allow hal_fingerprint_default efs_file:lnk_file r_file_perms;
+allow hal_fingerprint_default efs_file:file r_file_perms;
+allow hal_fingerprint_default sec_efs_file:dir { getattr search };
+allow hal_fingerprint_default sec_efs_file:lnk_file r_file_perms;
+allow hal_fingerprint_default sec_efs_file:file r_file_perms;
