@@ -110,6 +110,32 @@ on post-fs-data
     mkdir /data/vendor/biometrics/fp/User_0 0700 system system
     chown system system /data/vendor/biometrics/fp/User_0
 
+# Reseed load-bearing HAL blobs when missing (e.g. after a /data format).
+# calib.dat is the factory optical calibration (FPBAuthService::getCalibFromEFS
+# reads efs/biometrics/meta/egis_calibration_data.bin). init copy is
+# unconditional - safe because the factory blob is immutable and the HAL
+# restores byte-identical content itself (md5-verified on device 2026-10-11).
+    copy /efs/biometrics/meta/egis_calibration_data.bin /data/vendor/biometrics/meta/calib.dat
+    chown system system /data/vendor/biometrics/meta/calib.dat
+    chmod 0600 /data/vendor/biometrics/meta/calib.dat
+# Panel cell ID for CID validation. The stored copy
+# (efs/biometrics/meta/cell_id) is absent on this unit and never recreated,
+# while the live value is always readable at /sys/class/lcd/panel/cell_id -
+# seed the /data copies from it. Unconditional is safe: the panel never
+# changes, so the copy cannot go stale.
+    copy /sys/class/lcd/panel/cell_id /data/vendor/biometrics/meta/cell_id
+    copy /sys/class/lcd/panel/cell_id /data/vendor/biometrics/cell_id
+    chown system system /data/vendor/biometrics/meta/cell_id
+    chown system system /data/vendor/biometrics/cell_id
+    chmod 0600 /data/vendor/biometrics/meta/cell_id
+    chmod 0600 /data/vendor/biometrics/cell_id
+# Backup + per-user info dirs. bk/ is removed again during the enroll/cancel
+# flow (observed 2026-10-11); info/User_0 mirrors fp/User_0 above. Idempotent.
+    mkdir /data/vendor/biometrics/bk 0700 system system
+    mkdir /data/vendor/biometrics/info/User_0 0700 system system
+    chown system system /data/vendor/biometrics/bk
+    chown system system /data/vendor/biometrics/info/User_0
+
 # Log data folder
     mkdir /data/vendor 0771 root system
     mkdir /data/vendor/log 0771 root system
