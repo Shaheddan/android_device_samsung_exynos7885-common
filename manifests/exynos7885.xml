@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!--
+    Shared projects for Royna's Exynos7885 Samsung devices (A10, A20, A20e, A30, A30s,
+    A40) on PixelOS 16 QPR2 (sixteen-qpr2, LineageOS 23.2 based). Uses the remotes of
+    PixelOS's manifest: "github" (https://github.com) and "lineageos" (lineage-23.2).
+    Same projects as Royna's Exynos7885-new-sixteen manifest, minus the private FM
+    radio repo, with common trees and kernel taken from the Shaheddan forks.
+    Each device's own device/vendor pair is added by crave/build.sh, so a new device
+    needs no change here.
+  -->
+
+  <!-- Common device, vendor, kernel -->
+  <project path="device/samsung/exynos7885-common" name="Shaheddan/android_device_samsung_exynos7885-common" remote="github" revision="pixelos-16.2" />
+  <project path="vendor/samsung/exynos7885-common" name="Shaheddan/proprietary_vendor_samsung_exynos7885-common" remote="github" revision="bumblebee" />
+  <project path="kernel/samsung/exynos7885" name="Shaheddan/android_kernel_samsung_exynos7885" remote="github" revision="EurekaV3" />
+
+  <!-- LineageOS Samsung hardware -->
+  <project path="hardware/samsung" name="LineageOS/android_hardware_samsung" remote="lineageos" />
+  <project path="hardware/samsung_slsi/libbt" name="LineageOS/android_hardware_samsung_slsi_libbt" remote="lineageos" />
+  <project path="hardware/samsung_slsi/scsc_wifibt/wifi_hal" name="LineageOS/android_hardware_samsung_slsi_scsc_wifibt_wifi_hal" remote="lineageos" />
+  <project path="hardware/samsung_slsi/scsc_wifibt/wpa_supplicant_lib" name="LineageOS/android_hardware_samsung_slsi_scsc_wifibt_wpa_supplicant_lib" remote="lineageos" />
+
+  <!-- Exynos 7885 legacy userspace and sepolicy (Royna's, forked) -->
+  <project path="hardware/samsung_slsi-linaro/graphics" name="Shaheddan/android_hardware_samsung_slsi-linaro_graphics" remote="github" revision="lineage-23.2" />
+  <project path="hardware/samsung_slsi-linaro/exynos" name="Shaheddan/android_hardware_samsung_slsi-linaro_exynos" remote="github" revision="lineage-23.2" />
+  <project path="hardware/samsung_slsi-linaro/config" name="Shaheddan/android_hardware_samsung_slsi-linaro_config" remote="github" revision="lineage-23.2" />
+  <project path="hardware/samsung_slsi-linaro/openmax" name="Shaheddan/android_hardware_samsung_slsi-linaro_openmax" remote="github" revision="lineage-23.2" />
+  <project path="device/samsung_slsi/sepolicy" name="Shaheddan/android_device_samsung_slsi_sepolicy" remote="github" revision="lineage-23.2" />
+  <project path="hardware/samsung-ext/interfaces" name="Shaheddan/hardware_samsung-extra_interfaces" remote="github" revision="lineage-23.2" />
+
+  <!-- IMS (VoLTE). Its rnnoise submodule comes through sync-s; the AEC3 commit it pins
+       is not on any upstream branch, so it is fetched as its own project, as Royna does. -->
+  <project path="packages/apps/PhhIms" name="krazey/ims" remote="github" revision="main" sync-s="true" />
+  <project path="packages/apps/PhhIms/app/jni/webrtc-aec3" name="ewan-xu/AEC3" remote="github" revision="6b11f0f31cd10f6bf68025ccad771f545d87dbce" clone-depth="1" sync-s="true" />
+</manifest>
