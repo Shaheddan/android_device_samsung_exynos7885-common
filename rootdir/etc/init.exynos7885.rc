@@ -13,6 +13,13 @@ on init
     # Fastcharge
     chown system radio /sys/class/sec/switch/afc_disable
 
+    # Charging control and bypass: the health HAL and ExynosParts run as system, and the
+    # battery driver creates these root-owned, so without this every write fails.
+    chown system system /sys/class/power_supply/battery/hmt_ta_charge
+    chmod 0660 /sys/class/power_supply/battery/hmt_ta_charge
+    chown system system /sys/class/power_supply/battery/batt_slate_mode
+    chmod 0660 /sys/class/power_supply/battery/batt_slate_mode
+
     # ZRAM parameters
     write /proc/sys/vm/page-cluster 0
     write /proc/sys/vm/swappiness 100

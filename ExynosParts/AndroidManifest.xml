@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.lineageos.settings.exynos"
+    android:sharedUserId="android.uid.system">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- persistent: the bypass service has to be running to catch every plug-in. -->
+    <application
+        android:label="@string/app_title"
+        android:persistent="true"
+        android:theme="@style/Theme.SubSettingsBase">
+
+        <!-- Opened from Settings > Battery > Charging (a Settings patch adds the entry
+             and hides the stock "Charging control" and "Charging speed" ones). -->
+        <activity
+            android:name=".ChargingActivity"
+            android:label="@string/charging_title"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.lineageos.settings.action.DEVICE_CHARGING" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".BypassService"
+            android:exported="false" />
+    </application>
+</manifest>

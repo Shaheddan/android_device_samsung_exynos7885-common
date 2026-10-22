@@ -1,0 +1,116 @@
+diff --git a/res/values/custom_strings.xml b/res/values/custom_strings.xml
+index 36420fd..928195d 100644
+--- a/res/values/custom_strings.xml
++++ b/res/values/custom_strings.xml
+@@ -367,4 +367,9 @@
+     <string name="language_picker_page">Language picker page</string>
+     <string name="search_region">Search regions</string>
+     <string name="search_region_page">Search region page</string>
++
++    <!-- Device charging page (bypass, charging control and speed in one place) -->
++    <string name="device_charging_title">Charging</string>
++    <string name="device_charging_summary">Bypass charging, charge limit, schedules and speed</string>
++    <string name="device_charging_keywords">bypass, charging control, charge limit, charging speed, fast charging</string>
+ </resources>
+diff --git a/res/xml/power_usage_summary.xml b/res/xml/power_usage_summary.xml
+index e42ee4b..401a4fc 100644
+--- a/res/xml/power_usage_summary.xml
++++ b/res/xml/power_usage_summary.xml
+@@ -77,6 +77,18 @@
+             settings:controller="com.android.settings.display.BatteryPercentagePreferenceController" />
+     </com.android.settingslib.widget.UntitledPreferenceCategory>
+ 
++    <!-- Charging: bypass, charging control and charging speed on one page, provided by the
++         device (ExynosParts on the Exynos7885 Galaxy phones). When a device provides it,
++         the two stock entries below hide themselves. -->
++    <Preference
++        android:key="device_charging"
++        android:title="@string/device_charging_title"
++        android:summary="@string/device_charging_summary"
++        settings:keywords="@string/device_charging_keywords"
++        settings:controller="com.android.settings.fuelgauge.DeviceChargingPreferenceController">
++        <intent android:action="org.lineageos.settings.action.DEVICE_CHARGING" />
++    </Preference>
++
+     <Preference
+         android:key="charging_control"
+         android:title="@string/charging_control_title"
+diff --git a/src/com/android/settings/fuelgauge/ChargingSpeedPreferenceController.java b/src/com/android/settings/fuelgauge/ChargingSpeedPreferenceController.java
+index c230094..a6ac6e0 100644
+--- a/src/com/android/settings/fuelgauge/ChargingSpeedPreferenceController.java
++++ b/src/com/android/settings/fuelgauge/ChargingSpeedPreferenceController.java
+@@ -82,6 +82,10 @@ public class ChargingSpeedPreferenceController extends BasePreferenceController
+ 
+     @Override
+     public int getAvailabilityStatus() {
++        // The device's own Charging page already contains charging speed.
++        if (DeviceChargingPreferenceController.isProvided(mContext)) {
++            return CONDITIONALLY_UNAVAILABLE;
++        }
+         return mHealthInterface != null && mHealthInterface.isFastChargeSupported()
+                 ? AVAILABLE : UNSUPPORTED_ON_DEVICE;
+     }
+diff --git a/src/com/android/settings/fuelgauge/DeviceChargingPreferenceController.java b/src/com/android/settings/fuelgauge/DeviceChargingPreferenceController.java
+new file mode 100644
+index 0000000..aa9bab5
+--- /dev/null
++++ b/src/com/android/settings/fuelgauge/DeviceChargingPreferenceController.java
+@@ -0,0 +1,35 @@
++/*
++ * SPDX-FileCopyrightText: The LineageOS Project
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++package com.android.settings.fuelgauge;
++
++import android.content.Context;
++import android.content.Intent;
++
++import com.android.settings.core.BasePreferenceController;
++
++/**
++ * Shows the device's own Charging page (bypass charging, charging control and charging
++ * speed together) when the device ships one, and lets the stock charging control and
++ * charging speed entries hide themselves in that case.
++ */
++public class DeviceChargingPreferenceController extends BasePreferenceController {
++
++    public static final String ACTION = "org.lineageos.settings.action.DEVICE_CHARGING";
++
++    public DeviceChargingPreferenceController(Context context, String key) {
++        super(context, key);
++    }
++
++    /** Whether an installed app handles the device charging page. */
++    public static boolean isProvided(Context context) {
++        return new Intent(ACTION).resolveActivity(context.getPackageManager()) != null;
++    }
++
++    @Override
++    public int getAvailabilityStatus() {
++        return isProvided(mContext) ? AVAILABLE : UNSUPPORTED_ON_DEVICE;
++    }
++}
+diff --git a/src/com/android/settings/lineage/health/ChargingControlPreferenceController.java b/src/com/android/settings/lineage/health/ChargingControlPreferenceController.java
+index e41ea52..aeaf90e 100644
+--- a/src/com/android/settings/lineage/health/ChargingControlPreferenceController.java
++++ b/src/com/android/settings/lineage/health/ChargingControlPreferenceController.java
+@@ -22,6 +22,7 @@ import android.os.IBinder;
+ import android.os.ServiceManager;
+ 
+ import com.android.settings.core.BasePreferenceController;
++import com.android.settings.fuelgauge.DeviceChargingPreferenceController;
+ import com.android.settings.R;
+ 
+ public class ChargingControlPreferenceController extends BasePreferenceController {
+@@ -48,6 +49,10 @@ public class ChargingControlPreferenceController extends BasePreferenceControlle
+ 
+     @Override
+     public int getAvailabilityStatus() {
++        // The device's own Charging page already contains charging control.
++        if (DeviceChargingPreferenceController.isProvided(mContext)) {
++            return CONDITIONALLY_UNAVAILABLE;
++        }
+         String rService =  "lineagehealth";
+         boolean negated = isNegated(rService);
+         if (negated) {

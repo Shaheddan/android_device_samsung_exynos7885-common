@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+
+     One page for everything about charging, in the KiwiParts Android 14 layout: intro,
+     the animated status card, then each feature as one group of rounded rows, and a
+     footer. Nothing here is persisted by androidx: "bypass_now" is stored by the
+     fragment, everything else lives in the system's charging control and fast charge
+     settings (the same ones the stock Settings pages used).
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.android.settingslib.widget.TopIntroPreference
+        android:key="charging_intro"
+        android:title="@string/charging_intro" />
+
+    <org.lineageos.settings.exynos.ChargingStatusPreference
+        android:key="charging_status" />
+
+    <PreferenceCategory
+        android:key="category_bypass"
+        android:title="@string/category_bypass">
+
+        <org.lineageos.settings.exynos.ChargingSwitchPreference
+            android:key="bypass_now"
+            android:icon="@drawable/ic_bypass_plug"
+            android:title="@string/bypass_now_title"
+            android:summary="@string/bypass_now_summary"
+            android:persistent="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="category_control"
+        android:title="@string/category_control">
+
+        <org.lineageos.settings.exynos.ChargingSwitchPreference
+            android:key="control_enabled"
+            android:icon="@drawable/ic_charging_control"
+            android:title="@string/control_title"
+            android:persistent="false" />
+
+        <org.lineageos.settings.exynos.ChargingChoicePreference
+            android:key="mode_limit"
+            android:icon="@drawable/ic_mode_limit"
+            android:title="@string/mode_limit_title"
+            android:summary="@string/mode_limit_summary" />
+
+        <org.lineageos.settings.exynos.ChargingChoicePreference
+            android:key="mode_auto"
+            android:icon="@drawable/ic_mode_alarm"
+            android:title="@string/mode_auto_title"
+            android:summary="@string/mode_auto_summary" />
+
+        <org.lineageos.settings.exynos.ChargingChoicePreference
+            android:key="mode_custom"
+            android:icon="@drawable/ic_mode_schedule"
+            android:title="@string/mode_custom_title"
+            android:summary="@string/mode_custom_summary" />
+
+        <org.lineageos.settings.exynos.ChargingLevelPreference
+            android:key="limit"
+            android:icon="@drawable/ic_mode_level"
+            android:title="@string/limit_title"
+            android:max="100"
+            app:min="10"
+            android:defaultValue="80"
+            android:persistent="false"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="false" />
+
+        <org.lineageos.settings.exynos.ChargingTimePreference
+            android:key="start_time"
+            android:icon="@drawable/ic_time_start"
+            android:title="@string/start_time_title" />
+
+        <org.lineageos.settings.exynos.ChargingTimePreference
+            android:key="target_time"
+            android:icon="@drawable/ic_time_target"
+            android:title="@string/target_time_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="category_speed"
+        android:title="@string/category_speed">
+
+        <org.lineageos.settings.exynos.ChargingSpeedPreference
+            android:key="speed"
+            android:icon="@drawable/ic_speed"
+            android:title="@string/speed_title"
+            android:summary="@string/speed_summary" />
+
+    </PreferenceCategory>
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="charging_footer"
+        android:title="@string/charging_footer"
+        android:selectable="false" />
+
+</PreferenceScreen>

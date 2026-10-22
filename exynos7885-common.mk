@@ -122,10 +122,28 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     vendor.lineage.health-service.default
 
+# Settings > Battery > Charging: bypass charging, charging control and charging speed
+# on one page (replaces the stock entries, see patches/packages/apps/Settings).
+PRODUCT_PACKAGES += \
+    ExynosParts
+
+ifeq ($(TARGET_DEVICE),a10)
+# A10 (S2MU005, micro-USB): its kernel has no charge-pause path, so charging control can
+# only cut the charger off with slate mode (toggle, no bypass).
 $(call soong_config_set,lineage_health,charging_control_charging_path,/sys/class/power_supply/battery/batt_slate_mode)
 $(call soong_config_set,lineage_health,charging_control_charging_enabled,0)
 $(call soong_config_set,lineage_health,charging_control_charging_disabled,1)
 $(call soong_config_set_bool,lineage_health,charging_control_supports_bypass,false)
+else
+# S2MU106 phones: hmt_ta_charge=0 pauses charging while the charger keeps powering the
+# phone (charger off, buck on), so a limit or a schedule holds the level: true bypass.
+# Measured on the A30: battery current +420 mA -> 0 mA with USB still online. Slate mode
+# is not bypass: it cuts the charger off and reports the cable as unplugged.
+$(call soong_config_set,lineage_health,charging_control_charging_path,/sys/class/power_supply/battery/hmt_ta_charge)
+$(call soong_config_set,lineage_health,charging_control_charging_enabled,1)
+$(call soong_config_set,lineage_health,charging_control_charging_disabled,0)
+$(call soong_config_set_bool,lineage_health,charging_control_supports_bypass,true)
+endif
 $(call soong_config_set_bool,lineage_health,charging_control_supports_toggle,true)
 $(call soong_config_set_bool,lineage_health,charging_control_supports_deadline,false)
 ifneq ($(TARGET_DEVICE),a10)

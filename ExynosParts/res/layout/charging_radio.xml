@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget of a charging mode row. The whole row is the click target, so the radio
+     button itself only shows the state. -->
+<RadioButton xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/choice_radio"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@null"
+    android:clickable="false"
+    android:focusable="false"
+    android:importantForAccessibility="no" />

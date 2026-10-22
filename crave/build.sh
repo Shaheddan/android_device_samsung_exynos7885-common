@@ -46,6 +46,21 @@ cat .repo/local_manifests/devices.xml
 
 /opt/crave/resync.sh || { echo "!! resync failed"; exit 1; }
 
+# Our changes to platform projects live in $COMMON/patches/<project path>/*.patch and go
+# in after the resync. Each patched project is reset first, so a workspace reused from an
+# earlier job (patch already in, or half in) never makes this step fail.
+if [ -d "$COMMON/patches" ]; then
+  for proj in $(cd "$COMMON/patches" && find . -name '*.patch' -printf '%h\n' | sort -u); do
+    proj=${proj#./}
+    { git -C "$proj" reset -q --hard && git -C "$proj" clean -fdq; } \
+      || { echo "!! cannot reset $proj"; exit 1; }
+    for p in "$COMMON/patches/$proj"/*.patch; do
+      git -C "$proj" apply "$PWD/$p" || { echo "!! patch does not apply: $p"; exit 1; }
+      echo "== patched $proj: $(basename "$p")"
+    done
+  done
+fi
+
 source build/envsetup.sh
 LOG=$(mktemp)
 OK=; FAIL=

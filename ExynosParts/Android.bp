@@ -1,0 +1,22 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+// Settings > Battery > Charging for the Exynos7885 Galaxy phones: bypass charging,
+// charging control and charging speed on one page. Runs as system (platform key,
+// android.uid.system) to write the charger node and use the hidden health API.
+android_app {
+    name: "ExynosParts",
+
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+    certificate: "platform",
+    platform_apis: true,
+    system_ext_specific: true,
+    privileged: true,
+
+    static_libs: [
+        "org.lineageos.settings.resources",
+    ],
+}

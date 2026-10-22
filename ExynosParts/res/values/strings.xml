@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="app_title">Exynos Parts</string>
+    <string name="charging_title">Charging</string>
+
+    <!-- Page layout -->
+    <string name="charging_intro">Choose how your phone charges: run it straight from the charger, stop at a level, or finish charging on a schedule.</string>
+    <string name="charging_footer">Bypass charging and charge limits keep the battery cooler and away from a full charge, which slows battery wear. Normal charging always comes back when you unplug the charger.</string>
+    <string name="charging_footer_no_bypass">Charge limits keep the battery away from a full charge, which slows battery wear. Normal charging always comes back when you unplug the charger.</string>
+    <string name="percent">%1$d%%</string>
+
+    <!-- Bypass -->
+    <string name="category_bypass">Bypass charging</string>
+    <string name="bypass_now_title">Bypass now</string>
+    <string name="bypass_now_summary">Stop charging and run the phone from the charger, holding the current level</string>
+
+    <!-- Charging control -->
+    <string name="category_control">Charging control</string>
+    <string name="control_title">Charging control</string>
+    <string name="control_summary_off">Off</string>
+    <string name="control_summary_paused">Paused while bypass now is on</string>
+    <string name="mode_limit_title">Limit and bypass</string>
+    <string name="mode_limit_summary">Charge to the level below, then run from the charger</string>
+    <string name="mode_limit_title_no_bypass">Limit charging</string>
+    <string name="mode_limit_summary_no_bypass">Stop charging at the level below</string>
+    <string name="mode_auto_title">Automatic schedule</string>
+    <string name="mode_auto_summary" formatted="false">Pause at 80% overnight and finish just before your next alarm</string>
+    <string name="mode_custom_title">Custom schedule</string>
+    <string name="mode_custom_summary" formatted="false">Pause at 80% and finish by a time you choose</string>
+    <string name="limit_title">Charge limit</string>
+    <string name="limit_summary">Stop at %1$d%%</string>
+    <string name="start_time_title">Start time</string>
+    <string name="start_time_summary">Takes effect when you plug in after %1$s</string>
+    <string name="target_time_title">Full charge by</string>
+    <string name="target_time_summary">Battery is full by %1$s</string>
+
+    <!-- Charging speed -->
+    <string name="category_speed">Charging speed</string>
+    <string name="speed_title">Charging speed</string>
+    <string name="speed_summary">Slow charging is gentler on the battery and keeps the phone cooler</string>
+    <string name="speed_slow">Slow</string>
+    <string name="speed_fast">Fast</string>
+    <string name="speed_super_fast">Super fast</string>
+
+    <!-- Status card: chip -->
+    <string name="chip_battery">On battery</string>
+    <string name="chip_charging">Charging</string>
+    <string name="chip_fast">Fast charging</string>
+    <string name="chip_slow">Slow charging</string>
+    <string name="chip_full">Full</string>
+    <string name="chip_bypass">Bypass active</string>
+    <string name="chip_starting">Starting</string>
+
+    <!-- Status card: title and summary -->
+    <string name="status_battery_title">On battery</string>
+    <string name="status_battery_bypass">Bypass starts when you plug in a charger</string>
+    <string name="status_battery_limit">Charging will stop at %1$d%%</string>
+    <string name="status_battery_auto">Charging will finish just before your alarm</string>
+    <string name="status_battery_custom">Charging will finish by %1$s</string>
+    <string name="status_battery_normal">Plug in a charger to charge</string>
+    <string name="status_bypass_title">Running from the charger</string>
+    <string name="status_bypass_now">Battery held at %1$d%%</string>
+    <string name="status_bypass_limit">Limit reached, battery held at %1$d%%</string>
+    <string name="status_bypass_schedule">Paused at %1$d%%, full by %2$s</string>
+    <string name="status_bypass_alarm">Paused at %1$d%%, full before your alarm</string>
+    <string name="status_charging_title">Charging</string>
+    <string name="status_full_title">Fully charged</string>
+    <string name="status_charging_limit">Bypass starts at %1$d%%</string>
+    <string name="status_charging_limit_no_bypass">Charging stops at %1$d%%</string>
+    <string name="status_charging_custom">Pauses at 80%%, full by %1$s</string>
+    <string name="status_charging_auto">Pauses at 80%%, full before your alarm at %1$s</string>
+    <string name="status_charging_no_alarm">No alarm set, charging normally</string>
+    <string name="status_charging_normal">Charging normally</string>
+    <string name="status_full_summary">The charger is powering the phone</string>
+    <string name="status_starting_title">Starting bypass…</string>
+    <string name="status_starting_summary">Takes effect in a moment</string>
+</resources>

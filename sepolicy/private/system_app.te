@@ -1,0 +1,5 @@
+# ExynosParts (Settings > Battery > Charging) runs as system_app: "Bypass now" writes the
+# battery driver's hmt_ta_charge node, and the page reads it to show when charging is
+# paused (the battery status keeps saying "Charging" while bypassing).
+allow system_app sysfs_battery:dir search;
+allow system_app sysfs_battery_writable:file rw_file_perms;
