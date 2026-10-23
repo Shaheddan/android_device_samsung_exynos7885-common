@@ -44,6 +44,14 @@ curl -sfL "$RAW/manifests/exynos7885.xml" -o .repo/local_manifests/exynos7885.xm
 } > .repo/local_manifests/devices.xml || exit 1
 cat .repo/local_manifests/devices.xml
 
+# LineageOS-only apps that PixelOS cannot build, as project:path pairs. AdvancedDisplay and
+# Doze in hardware/samsung depend on lineage-sdk (org.lineageos.platform.internal), which
+# PixelOS does not ship (it carries its own framework copy of the Lineage health/hardware
+# services), and soong refuses the whole tree over one undefined dependency (Crave build
+# 307064). Royna's PixelOS fork of hardware/samsung drops the same two ("samsung: Drop
+# los-specific stuff"). Removed after the resync; the project is reset before the next one.
+TRIMS="hardware/samsung:packages/AdvancedDisplay hardware/samsung:packages/Doze"
+
 # ---- Crave fixes carried over from the kiwi (Honor 5X) and tablet builds ----------------
 
 # Our patches go in uncommitted (below), so a workspace reused from an earlier job still has
@@ -57,6 +65,11 @@ if [ -d "$COMMON/patches" ]; then
       && echo "== cleaned $proj before the resync"
   done
 fi
+for proj in $(for t in $TRIMS; do echo "${t%%:*}"; done | sort -u); do
+  [ -e "$proj/.git" ] || continue
+  git -C "$proj" reset -q --hard && git -C "$proj" clean -fdq \
+    && echo "== restored $proj before the resync"
+done
 
 # Crave keeps .repo between jobs, and project 82's workspace is re-initialised here from
 # whatever PixelOS version it held before. The tablet's first LineageOS 20 job after its 19.1
@@ -92,6 +105,12 @@ if [ -d "$COMMON/patches" ]; then
     done
   done
 fi
+for t in $TRIMS; do
+  proj=${t%%:*}
+  [ -e "$proj/.git" ] || { echo "!! project missing for trim: $proj"; exit 1; }
+  rm -rf "${proj:?}/${t#*:}"
+  echo "== removed $proj/${t#*:} (LineageOS-only, needs lineage-sdk)"
+done
 
 # Crave wraps compilers by renaming each one to mbt-bin-<name> (kiwi build 17). LineageOS's
 # gcc-4.9 "gcc" is itself a python wrapper that execs real-<its own file name>, so after the
