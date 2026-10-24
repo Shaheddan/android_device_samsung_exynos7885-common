@@ -3,6 +3,8 @@
 # Queue it from WSL in ~/crave-a30, on Crave's PixelOS project (82), e.g.:
 #   crave run --projectID 82 --no-patch -- "curl -sfL https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/<commit>/crave/build.sh | DEVICES='a10 a20' VARIANT=userdebug bash"
 # DEVICES: any of a10 a20 a20e a30 a30s a40, space separated, built in that order.
+# Device trees and device vendor trees both come from their pixelos-16.2 branches (the
+# vendor ones add the hardware/samsung namespace import that libteecl needs).
 # WHY each step:
 #  - the workspace is re-initialised to PixelOS's sixteen-qpr2 manifest, so the node
 #    builds that branch whatever Crave's project happens to be cached at;
@@ -38,7 +40,7 @@ curl -sfL "$RAW/manifests/exynos7885.xml" -o .repo/local_manifests/exynos7885.xm
   echo '<manifest>'
   for d in $DEVICES; do
     echo "  <project path=\"device/samsung/$d\" name=\"Shaheddan/android_device_samsung_$d\" remote=\"github\" revision=\"$BRANCH\" />"
-    echo "  <project path=\"vendor/samsung/$d\" name=\"Shaheddan/proprietary_vendor_samsung_$d\" remote=\"github\" revision=\"bumblebee\" />"
+    echo "  <project path=\"vendor/samsung/$d\" name=\"Shaheddan/proprietary_vendor_samsung_$d\" remote=\"github\" revision=\"$BRANCH\" />"
   done
   echo '</manifest>'
 } > .repo/local_manifests/devices.xml || exit 1
