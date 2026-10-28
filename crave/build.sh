@@ -7,7 +7,9 @@
 # vendor ones add the hardware/samsung namespace import that libteecl needs).
 # WHY each step:
 #  - the workspace is re-initialised to PixelOS's sixteen-qpr2 manifest, so the node
-#    builds that branch whatever Crave's project happens to be cached at;
+#    builds that branch whatever Crave's project happens to be cached at; with
+#    --depth=1, which Crave's admins require (full history wastes their storage and
+#    bandwidth; the build needs none of it);
 #  - one shared local manifest plus a generated device/vendor pair per device: the
 #    common projects are listed once and a new device needs no new manifest file;
 #  - every requested device is synced in one resync and built one after another in
@@ -30,7 +32,7 @@ for d in $DEVICES; do
 done
 echo "== PixelOS 16.2 $VARIANT for:$(printf ' %s' $DEVICES)"
 
-repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b sixteen-qpr2 --git-lfs \
+repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b sixteen-qpr2 --git-lfs --depth=1 \
   || { echo "!! repo init failed"; exit 1; }
 rm -rf .repo/local_manifests && mkdir -p .repo/local_manifests || exit 1
 curl -sfL "$RAW/manifests/exynos7885.xml" -o .repo/local_manifests/exynos7885.xml \
