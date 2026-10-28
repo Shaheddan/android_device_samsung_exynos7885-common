@@ -1,0 +1,88 @@
+diff --git a/res/values/custom_strings.xml b/res/values/custom_strings.xml
+index 928195d..dd89887 100644
+--- a/res/values/custom_strings.xml
++++ b/res/values/custom_strings.xml
+@@ -372,4 +372,8 @@
+     <string name="device_charging_title">Charging</string>
+     <string name="device_charging_summary">Bypass charging, charge limit, schedules and speed</string>
+     <string name="device_charging_keywords">bypass, charging control, charge limit, charging speed, fast charging</string>
++
++    <!-- Display: blur effects for the whole phone -->
++    <string name="blur_effects_title">Blur effects</string>
++    <string name="blur_effects_summary">Blur behind the notification shade, recents and dialogs</string>
+ </resources>
+diff --git a/res/xml/display_settings.xml b/res/xml/display_settings.xml
+index 48393a3..17d1fa6 100644
+--- a/res/xml/display_settings.xml
++++ b/res/xml/display_settings.xml
+@@ -102,6 +102,14 @@
+             settings:controller="com.android.settings.display.DarkUIPreferenceController"
+             settings:keywords="@string/keywords_dark_ui_mode"/>
+ 
++        <!-- Blur effects for the whole phone (Settings.Global.DISABLE_WINDOW_BLURS) -->
++        <SwitchPreferenceCompat
++            android:key="blur_effects"
++            android:title="@string/blur_effects_title"
++            android:summary="@string/blur_effects_summary"
++            settings:keywords="@string/keywords_blur_switch"
++            settings:controller="com.android.settings.display.BlurEffectsPreferenceController"/>
++
+         <Preference
+             android:fragment="com.android.settings.accessibility.TextReadingPreferenceFragment"
+             android:key="text_reading_options"
+diff --git a/src/com/android/settings/display/BlurEffectsPreferenceController.java b/src/com/android/settings/display/BlurEffectsPreferenceController.java
+new file mode 100644
+index 0000000..0c0b6ef
+--- /dev/null
++++ b/src/com/android/settings/display/BlurEffectsPreferenceController.java
+@@ -0,0 +1,50 @@
++/*
++ * SPDX-FileCopyrightText: The LineageOS Project
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++package com.android.settings.display;
++
++import static android.view.CrossWindowBlurListeners.CROSS_WINDOW_BLUR_SUPPORTED;
++
++import android.content.Context;
++import android.provider.Settings;
++
++import com.android.settings.R;
++import com.android.settings.core.TogglePreferenceController;
++
++/**
++ * Blur effects on/off for the whole phone (notification shade, recents, dialogs, apps that
++ * ask for window blur). It drives Settings.Global.DISABLE_WINDOW_BLURS, the same setting
++ * as "Allow window-level blurs" in Developer options, which WindowManager applies to every
++ * window; the default (unset or 0) is blur on.
++ */
++public class BlurEffectsPreferenceController extends TogglePreferenceController {
++
++    public BlurEffectsPreferenceController(Context context, String key) {
++        super(context, key);
++    }
++
++    @Override
++    public int getAvailabilityStatus() {
++        // Only offered where SurfaceFlinger can blur (ro.surface_flinger.supports_background_blur).
++        return CROSS_WINDOW_BLUR_SUPPORTED ? AVAILABLE : UNSUPPORTED_ON_DEVICE;
++    }
++
++    @Override
++    public boolean isChecked() {
++        return Settings.Global.getInt(mContext.getContentResolver(),
++                Settings.Global.DISABLE_WINDOW_BLURS, 0) == 0;
++    }
++
++    @Override
++    public boolean setChecked(boolean isChecked) {
++        return Settings.Global.putInt(mContext.getContentResolver(),
++                Settings.Global.DISABLE_WINDOW_BLURS, isChecked ? 0 : 1);
++    }
++
++    @Override
++    public int getSliceHighlightMenuRes() {
++        return R.string.menu_key_display;
++    }
++}
