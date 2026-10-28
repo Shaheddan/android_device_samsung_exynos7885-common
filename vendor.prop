@@ -9,6 +9,15 @@ ro.vendor.cscsupported=1
 ## OpenGLES
 ro.opengles.version=196610
 
+## SurfaceFlinger
+# Blur behind the notification shade, recents and dialogs, and window blur for apps.
+# Without this Android 16 treats the device as unable to blur and greys the option out.
+# It can be switched off in Settings > Display > Blur effects (disable_window_blurs).
+ro.surface_flinger.supports_background_blur=1
+# Tell SurfaceFlinger blurs are costly, so it sends the expensive-rendering power hint
+# while a blur is on screen (what Pixels with similar GPUs do).
+ro.sf.blurs_are_expensive=1
+
 ## RIL
 vendor.sec.rild.libpath=/vendor/lib64/libsec-ril.so
 vendor.sec.rild.libpath2=/vendor/lib64/libsec-ril-dsds.so
