@@ -5,24 +5,23 @@
 
 package org.lineageos.settings.exynos;
 
-import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Set;
 
 /**
  * The battery driver's hmt_ta_charge node: the bypass switch on these phones.
  *
  * Writing 0 sets SEC_BAT_CURRENT_EVENT_CHARGE_DISABLE, so every "charge" request becomes
- * SEC_BAT_CHG_MODE_CHARGING_OFF: the S2MU106 drops to buck-only mode, the charger keeps
- * powering the phone and the battery is neither charged nor drained (the same state as
- * "Full" on a charger). Measured on the A30: battery current went from about +420 mA to
- * about 0 mA with USB still online, and back on writing 1. The kernel clears it by itself
- * when the cable is unplugged.
+ * SEC_BAT_CHG_MODE_CHARGING_OFF: the charger (S2MU106 on the A20/A20e/A30/A30s/A40,
+ * S2MU005 on the A10) drops to buck-only mode, keeps powering the phone and leaves the
+ * battery alone (the same state as "Full" on a charger). Measured on the A30: battery
+ * current went from about +420 mA to about 0 mA with USB still online, and back on
+ * writing 1. The kernel clears it by itself when the cable is unplugged. EurekaV3 gives
+ * the A10's micro-USB build the same behaviour (Samsung's used the node for Gear VR OTG).
  *
  * Charging control (the Lineage health HAL) drives the same node; this app only writes it
  * for "Bypass now", while charging control is switched off.
@@ -38,11 +37,6 @@ final class ChargerNode {
         "/sys/class/power_supply/battery/hmt_ta_charge",
     };
 
-    // Only the S2MU106 (USB-C, CCIC) phones get the charge-disable path above. The A10
-    // (S2MU005, micro-USB) builds hmt_ta_charge without CONFIG_CCIC_NOTIFIER, where the
-    // node toggles OTG instead, so it must never be written there.
-    private static final Set<String> BYPASS_DEVICES = Set.of("a20", "a20e", "a30", "a30s", "a40");
-
     private ChargerNode() {}
 
     private static String path() {
@@ -53,7 +47,7 @@ final class ChargerNode {
     }
 
     static boolean isBypassSupported() {
-        return BYPASS_DEVICES.contains(Build.DEVICE) && path() != null;
+        return path() != null;
     }
 
     /** @return true when charging is paused (bypass), false when allowed, null if unknown */
