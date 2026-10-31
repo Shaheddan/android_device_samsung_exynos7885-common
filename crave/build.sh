@@ -1,8 +1,10 @@
 #!/bin/bash
-# Build PixelOS 16 QPR2 (16.2) for Royna's Exynos7885 Samsung devices on a Crave node.
+# Build PixelOS 16 QPR2 (16.2) for one of Royna's Exynos7885 Samsung devices on a Crave node.
 # Queue it from WSL in ~/crave-a30, on Crave's PixelOS project (82), e.g.:
-#   crave run --projectID 82 --no-patch -- "curl -sfL https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/<commit>/crave/build.sh | DEVICES='a10 a20' VARIANT=userdebug bash"
-# DEVICES: any of a10 a20 a20e a30 a30s a40, space separated, built in that order.
+#   crave run --projectID 82 --no-patch -- "curl -sfL https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/<commit>/crave/build.sh | DEVICE=a30s VARIANT=userdebug bash"
+# DEVICE: one of a10 a20 a20e a30 a30s a40. ONE device per job: Crave's rules forbid
+# building several devices in one build ("One Build should only build for one
+# device/target", even when they share a common tree), so this refuses more than one.
 # Device trees and device vendor trees both come from their pixelos-16.2 branches (the
 # vendor ones add the hardware/samsung namespace import that libteecl needs).
 # WHY each step:
@@ -12,25 +14,27 @@
 #    bandwidth; the build needs none of it);
 #  - one shared local manifest plus a generated device/vendor pair per device: the
 #    common projects are listed once and a new device needs no new manifest file;
-#  - every requested device is synced in one resync and built one after another in
-#    this job, because the account can only run one Crave job at a time;
-#  - each zip goes to GoFile right after its own build (it is over GitHub's 2 GiB
-#    asset limit and Crave clears out/ after the job); a failed device is reported and
-#    the next one still builds.
+#  - the zip goes to GoFile right after the build (it is over GitHub's 2 GiB asset
+#    limit and Crave clears out/ after the job).
 # No `set -e`: build/envsetup.sh is not written for it; critical steps fail explicitly.
 VARIANT=${VARIANT:-userdebug}
-DEVICES=${DEVICES:-a30}
+# DEVICES is the old name of DEVICE; either may be given, with exactly one device.
+DEVICE=${DEVICE:-$DEVICES}
 BRANCH=${BRANCH:-pixelos-16.2}
 COMMON=device/samsung/exynos7885-common
 RAW=https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/$BRANCH
 
-for d in $DEVICES; do
-  case " a10 a20 a20e a30 a30s a40 " in
-    *" $d "*) ;;
-    *) echo "!! unknown device '$d' (known: a10 a20 a20e a30 a30s a40)"; exit 1 ;;
-  esac
-done
-echo "== PixelOS 16.2 $VARIANT for:$(printf ' %s' $DEVICES)"
+set -- $DEVICE
+if [ $# -ne 1 ]; then
+  echo "!! give exactly one device, e.g. DEVICE=a30s (got: '${DEVICE}'). Crave allows one device per build."
+  exit 1
+fi
+DEVICE=$1
+case " a10 a20 a20e a30 a30s a40 " in
+  *" $DEVICE "*) ;;
+  *) echo "!! unknown device '$DEVICE' (known: a10 a20 a20e a30 a30s a40)"; exit 1 ;;
+esac
+echo "== PixelOS 16.2 $VARIANT for $DEVICE"
 
 repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b sixteen-qpr2 --git-lfs --depth=1 \
   || { echo "!! repo init failed"; exit 1; }
@@ -40,10 +44,8 @@ curl -sfL "$RAW/manifests/exynos7885.xml" -o .repo/local_manifests/exynos7885.xm
 {
   echo '<?xml version="1.0" encoding="UTF-8"?>'
   echo '<manifest>'
-  for d in $DEVICES; do
-    echo "  <project path=\"device/samsung/$d\" name=\"Shaheddan/android_device_samsung_$d\" remote=\"github\" revision=\"$BRANCH\" />"
-    echo "  <project path=\"vendor/samsung/$d\" name=\"Shaheddan/proprietary_vendor_samsung_$d\" remote=\"github\" revision=\"$BRANCH\" />"
-  done
+  echo "  <project path=\"device/samsung/$DEVICE\" name=\"Shaheddan/android_device_samsung_$DEVICE\" remote=\"github\" revision=\"$BRANCH\" />"
+  echo "  <project path=\"vendor/samsung/$DEVICE\" name=\"Shaheddan/proprietary_vendor_samsung_$DEVICE\" remote=\"github\" revision=\"$BRANCH\" />"
   echo '</manifest>'
 } > .repo/local_manifests/devices.xml || exit 1
 cat .repo/local_manifests/devices.xml
@@ -184,19 +186,17 @@ ncurses5_links() {
 source build/envsetup.sh
 LOG=$(mktemp)
 OK=; FAIL=
-for d in $DEVICES; do
-  echo "==================== $d"
-  # PixelOS's breakfast lunches custom_<device>-<its current release>-$VARIANT
-  if breakfast "$d" "$VARIANT" && ncurses5_links && m pixelos; then
-    bash "$COMMON/crave/upload-gofile.sh" "$d" | tee -a "$LOG"
-    if [ "${PIPESTATUS[0]}" = 0 ]; then OK="$OK $d"; else FAIL="$FAIL $d(upload)"; fi
-  else
-    echo "!! $d: build failed"
-    FAIL="$FAIL $d(build)"
-  fi
-done
+echo "==================== $DEVICE"
+# PixelOS's breakfast lunches custom_<device>-<its current release>-$VARIANT
+if breakfast "$DEVICE" "$VARIANT" && ncurses5_links && m pixelos; then
+  bash "$COMMON/crave/upload-gofile.sh" "$DEVICE" | tee -a "$LOG"
+  if [ "${PIPESTATUS[0]}" = 0 ]; then OK=" $DEVICE"; else FAIL=" $DEVICE(upload)"; fi
+else
+  echo "!! $DEVICE: build failed"
+  FAIL=" $DEVICE(build)"
+fi
 
-# Repeat the results at the very end so they are the last lines of the log.
+# Repeat the result at the very end so it is the last lines of the log.
 echo "===================="
 grep '^GOFILE ' "$LOG"
 echo "BUILT:${OK:- none}"
