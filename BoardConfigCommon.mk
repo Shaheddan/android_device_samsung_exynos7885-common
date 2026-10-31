@@ -72,9 +72,21 @@ DEVICE_MATRIX_FILE := $(COMMON_PATH)/compatibility_matrix.xml
 DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
     hardware/samsung/vintf/samsung_framework_compatibility_matrix.xml
 
+# Touch HAL: it registers every feature the touch driver lists in
+# /sys/class/sec/tsp/cmd_list (glove_mode -> IGloveMode, hover_enable ->
+# IStylusMode, singletap_enable -> ITouchscreenGesture) and aborts when one is
+# not declared here, so each device declares exactly what its driver lists.
 ifneq ($(filter a30,$(TARGET_DEVICE)),)
+# melfas_mss100
 DEVICE_MANIFEST_FILE += $(COMMON_PATH)/manifest_touch_tsgesture.xml
+else ifneq ($(filter a30s,$(TARGET_DEVICE)),)
+# imagis ist40xx
+DEVICE_MANIFEST_FILE += $(COMMON_PATH)/manifest_touch_stylus_tsgesture.xml
+else ifneq ($(filter a40,$(TARGET_DEVICE)),)
+# imagis ist30xxh
+DEVICE_MANIFEST_FILE += $(COMMON_PATH)/manifest_touch_stylus.xml
 else
+# a10 sec_incell_ts, a20 zinitix, a20e himax
 DEVICE_MANIFEST_FILE += $(COMMON_PATH)/manifest_touch.xml
 endif
 
