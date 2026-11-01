@@ -58,6 +58,21 @@ cat .repo/local_manifests/devices.xml
 # los-specific stuff"). Removed after the resync; the project is reset before the next one.
 TRIMS="hardware/samsung:packages/AdvancedDisplay hardware/samsung:packages/Doze"
 
+# Google apps left out where the system partition cannot hold them all. The A10's is
+# 3392 MB and PixelOS with its Google apps fills 3926 MB (Crave build 308491 stopped at
+# system.img); the A20 and A20e (about 4100 MB) and the A30, A30s and A40 (about 4800 MB)
+# still fit. Names are the app folders under /system/product (module names in
+# vendor/pixel/gms); every one of them can be installed from the Play Store. They are
+# blanked out of vendor/pixel/gms's product makefiles after the resync, and that project is
+# reset before the next one.
+GMS=vendor/pixel/gms
+case $DEVICE in
+  a10) DROP_APPS="PrebuiltGmail Photos Maps CalendarGooglePrebuilt talkback \
+         SoundAmplifierPrebuilt_v4.8.758106410 ScribePrebuilt_v8.4.773573318 \
+         PixelLiveWallpaperPrebuilt-26000013 MagicPortraitWallpapers" ;;
+  *) DROP_APPS= ;;
+esac
+
 # ---- Crave fixes carried over from the kiwi (Honor 5X) and tablet builds ----------------
 
 # Our patches go in uncommitted (below), so a workspace reused from an earlier job still has
@@ -71,7 +86,7 @@ if [ -d "$COMMON/patches" ]; then
       && echo "== cleaned $proj before the resync"
   done
 fi
-for proj in $(for t in $TRIMS; do echo "${t%%:*}"; done | sort -u); do
+for proj in $(for t in $TRIMS; do echo "${t%%:*}"; done | sort -u) $GMS; do
   [ -e "$proj/.git" ] || continue
   git -C "$proj" reset -q --hard && git -C "$proj" clean -fdq \
     && echo "== restored $proj before the resync"
@@ -117,6 +132,27 @@ for t in $TRIMS; do
   rm -rf "${proj:?}/${t#*:}"
   echo "== removed $proj/${t#*:} (LineageOS-only, needs lineage-sdk)"
 done
+
+# Blank each left-out app's own line in GMS's PRODUCT_PACKAGES lists. The line keeps its
+# trailing backslash, so a continued list stays continued. An app that is not listed on a
+# line of its own stops the job here, minutes in, with the names GMS does list, instead of
+# at system.img three hours later.
+if [ -n "$DROP_APPS" ]; then
+  GMS_MKS=$(grep -rl --include='*.mk' 'PRODUCT_PACKAGES' "$GMS")
+  [ -n "$GMS_MKS" ] || { echo "!! no product makefiles in $GMS"; exit 1; }
+  for p in $DROP_APPS; do
+    re="^([[:space:]]*)$p([[:space:]]*\\\\?[[:space:]]*)\$"
+    files=$(grep -lE "$re" $GMS_MKS)
+    if [ -z "$files" ]; then
+      echo "!! $p is not listed on a line of its own in $GMS; the names its makefiles list:"
+      grep -hE '^[[:space:]]+[A-Za-z0-9_.-]+[[:space:]]*\\?[[:space:]]*$' $GMS_MKS | tr -d ' \t\\' | sort -u | tr '\n' ' '
+      echo
+      exit 1
+    fi
+    sed -i -E "s/$re/\\1\\2/" $files
+    echo "== left out $p ($(echo $files | tr ' ' ','))"
+  done
+fi
 
 # Crave wraps compilers by renaming each one to mbt-bin-<name> (kiwi build 17). LineageOS's
 # gcc-4.9 "gcc" is itself a python wrapper that execs real-<its own file name>, so after the
@@ -183,22 +219,42 @@ ncurses5_links() {
   echo "== checked $count host tools"
 }
 
+# After lunch: none of the left-out apps may still be in the product's package list.
+check_dropped() {
+  [ -n "$DROP_APPS" ] || return 0
+  local pk=" $(get_build_var PRODUCT_PACKAGES) " p bad=
+  for p in $DROP_APPS; do
+    case "$pk" in *" $p "*) bad="$bad $p" ;; esac
+  done
+  [ -z "$bad" ] || { echo "!! still in PRODUCT_PACKAGES:$bad"; return 1; }
+  echo "== left out of $DEVICE:$(printf ' %s' $DROP_APPS)"
+}
+
+# How full the system partition is, so the margin is known before it runs out.
+system_report() {
+  local sys=out/target/product/$DEVICE/system part
+  [ -d "$sys" ] || return 0
+  part=$(get_build_var BOARD_SYSTEMIMAGE_PARTITION_SIZE)
+  echo "SYSTEM $DEVICE: content $(du -sm "$sys" | cut -f1) MB, partition $(( ${part:-0} / 1048576 )) MB"
+}
+
 source build/envsetup.sh
 LOG=$(mktemp)
 OK=; FAIL=
 echo "==================== $DEVICE"
 # PixelOS's breakfast lunches custom_<device>-<its current release>-$VARIANT
-if breakfast "$DEVICE" "$VARIANT" && ncurses5_links && m pixelos; then
+if breakfast "$DEVICE" "$VARIANT" && check_dropped && ncurses5_links && m pixelos; then
   bash "$COMMON/crave/upload-gofile.sh" "$DEVICE" | tee -a "$LOG"
   if [ "${PIPESTATUS[0]}" = 0 ]; then OK=" $DEVICE"; else FAIL=" $DEVICE(upload)"; fi
 else
   echo "!! $DEVICE: build failed"
   FAIL=" $DEVICE(build)"
 fi
+system_report | tee -a "$LOG"
 
 # Repeat the result at the very end so it is the last lines of the log.
 echo "===================="
-grep '^GOFILE ' "$LOG"
+grep -E '^(GOFILE|SYSTEM) ' "$LOG"
 echo "BUILT:${OK:- none}"
 echo "FAILED:${FAIL:- none}"
 [ -z "$FAIL" ]
