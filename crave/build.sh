@@ -61,11 +61,11 @@ TRIMS="hardware/samsung:packages/AdvancedDisplay hardware/samsung:packages/Doze"
 # Google apps left out where the system partition cannot hold them all. The A10's is
 # 3392 MB and PixelOS with its Google apps fills 3926 MB (Crave build 308491 stopped at
 # system.img); the A20 and A20e (about 4100 MB) and the A30, A30s and A40 (about 4800 MB)
-# still fit. Names are the app folders under /system/product (module names in
-# vendor/pixel/gms); every one of them can be installed from the Play Store. They are
-# blanked out of vendor/pixel/gms's product makefiles after the resync, and that project is
-# reset before the next one.
-GMS=vendor/pixel/gms
+# still fit. Names are the app folders under /system (module names in PixelOS's
+# vendor/pixel/* projects); every one of them can be installed from the Play Store. They are
+# blanked out of those projects' makefiles after the resync (build 308606 showed the
+# wallpapers are not in vendor/pixel/gms), and the projects are reset before the next one.
+DROP_IN="vendor/pixel vendor/custom"
 case $DEVICE in
   a10) DROP_APPS="PrebuiltGmail Photos Maps CalendarGooglePrebuilt talkback \
          SoundAmplifierPrebuilt_v4.8.758106410 ScribePrebuilt_v8.4.773573318 \
@@ -86,7 +86,7 @@ if [ -d "$COMMON/patches" ]; then
       && echo "== cleaned $proj before the resync"
   done
 fi
-for proj in $(for t in $TRIMS; do echo "${t%%:*}"; done | sort -u) $GMS; do
+for proj in $(for t in $TRIMS; do echo "${t%%:*}"; done | sort -u) vendor/custom vendor/pixel/*; do
   [ -e "$proj/.git" ] || continue
   git -C "$proj" reset -q --hard && git -C "$proj" clean -fdq \
     && echo "== restored $proj before the resync"
@@ -133,24 +133,30 @@ for t in $TRIMS; do
   echo "== removed $proj/${t#*:} (LineageOS-only, needs lineage-sdk)"
 done
 
-# Blank each left-out app's own line in GMS's PRODUCT_PACKAGES lists. The line keeps its
-# trailing backslash, so a continued list stays continued. An app that is not listed on a
-# line of its own stops the job here, minutes in, with the names GMS does list, instead of
-# at system.img three hours later.
+# Blank each left-out app where PixelOS asks for it: its own line in a PRODUCT_PACKAGES
+# list (the line keeps its trailing backslash, so a continued list stays continued), or an
+# entry of a list in an Android.bp: a line holding only "app", or a one-line
+# `required: [...]` (its own `name:` or `stem:` line is never touched).
+# An app found in neither stops the job here, minutes in, showing every place its name
+# appears, instead of at system.img three hours later.
 if [ -n "$DROP_APPS" ]; then
-  GMS_MKS=$(grep -rl --include='*.mk' 'PRODUCT_PACKAGES' "$GMS")
-  [ -n "$GMS_MKS" ] || { echo "!! no product makefiles in $GMS"; exit 1; }
+  DROP_MKS=$(grep -rl --include='*.mk' 'PRODUCT_PACKAGES' $DROP_IN)
+  DROP_BPS=$(grep -rl --include='*.bp' 'required' $DROP_IN)
+  [ -n "$DROP_MKS" ] || { echo "!! no product makefiles in $DROP_IN"; exit 1; }
   for p in $DROP_APPS; do
     re="^([[:space:]]*)$p([[:space:]]*\\\\?[[:space:]]*)\$"
-    files=$(grep -lE "$re" $GMS_MKS)
-    if [ -z "$files" ]; then
-      echo "!! $p is not listed on a line of its own in $GMS; the names its makefiles list:"
-      grep -hE '^[[:space:]]+[A-Za-z0-9_.-]+[[:space:]]*\\?[[:space:]]*$' $GMS_MKS | tr -d ' \t\\' | sort -u | tr '\n' ' '
-      echo
+    mks=$(grep -lE "$re" $DROP_MKS)
+    [ -n "$mks" ] && sed -i -E "s/$re/\\1\\2/" $mks
+    bre1="^([[:space:]]*)\"$p\"[[:space:]]*,?[[:space:]]*\$"
+    bre2="^([[:space:]]*required:[[:space:]]*\\[.*)\"$p\"[[:space:]]*,?(.*)\$"
+    bps=$(grep -lE "$bre1|$bre2" $DROP_BPS)
+    [ -n "$bps" ] && sed -i -E -e "s/$bre1/\\1/" -e "s/$bre2/\\1\\2/" $bps
+    if [ -z "$mks$bps" ]; then
+      echo "!! $p is in no PRODUCT_PACKAGES line or required list under $DROP_IN; it appears in:"
+      grep -rnw --include='*.mk' --include='*.bp' --include='*.xml' -e "$p" $DROP_IN device | head -20
       exit 1
     fi
-    sed -i -E "s/$re/\\1\\2/" $files
-    echo "== left out $p ($(echo $files | tr ' ' ','))"
+    echo "== left out $p ($(echo $mks $bps | tr ' ' ','))"
   done
 fi
 
