@@ -18,6 +18,11 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 # OTA
 AB_OTA_UPDATER := false
 
+# PixelOS 17 adds Quick Tap (ColumbusService) unless told not to. It needs the
+# back-tap gesture sensors of Pixels, which these phones do not have, and the A10's
+# system partition has no room to spare.
+TARGET_SUPPORTS_QUICK_TAP := false
+
 # Audio
 TARGET_EXCLUDES_AUDIOFX := true
 
