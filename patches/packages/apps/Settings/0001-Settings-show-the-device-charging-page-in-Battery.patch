@@ -1,17 +1,17 @@
-diff --git a/res/values/custom_strings.xml b/res/values/custom_strings.xml
-index 36420fd..928195d 100644
---- a/res/values/custom_strings.xml
-+++ b/res/values/custom_strings.xml
-@@ -367,4 +367,9 @@
-     <string name="language_picker_page">Language picker page</string>
-     <string name="search_region">Search regions</string>
-     <string name="search_region_page">Search region page</string>
-+
-+    <!-- Device charging page (bypass, charging control and speed in one place) -->
+diff --git a/res/values/exynos7885_charging_strings.xml b/res/values/exynos7885_charging_strings.xml
+new file mode 100644
+index 0000000..bb4bef7
+--- /dev/null
++++ b/res/values/exynos7885_charging_strings.xml
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Device charging page (bypass, charging control and speed in one place).
++     In a file of its own so the patch does not depend on custom_strings.xml. -->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <string name="device_charging_title">Charging</string>
 +    <string name="device_charging_summary">Bypass charging, charge limit, schedules and speed</string>
 +    <string name="device_charging_keywords">bypass, charging control, charge limit, charging speed, fast charging</string>
- </resources>
++</resources>
 diff --git a/res/xml/power_usage_summary.xml b/res/xml/power_usage_summary.xml
 index e42ee4b..401a4fc 100644
 --- a/res/xml/power_usage_summary.xml
