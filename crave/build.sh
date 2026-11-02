@@ -1,14 +1,14 @@
 #!/bin/bash
-# Build PixelOS 16 QPR2 (16.2) for one of Royna's Exynos7885 Samsung devices on a Crave node.
+# Build PixelOS 17 for one of Royna's Exynos7885 Samsung devices on a Crave node.
 # Queue it from WSL in ~/crave-a30, on Crave's PixelOS project (82), e.g.:
 #   crave run --projectID 82 --no-patch -- "curl -sfL https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/<commit>/crave/build.sh | DEVICE=a30s VARIANT=userdebug bash"
 # DEVICE: one of a10 a20 a20e a30 a30s a40. ONE device per job: Crave's rules forbid
 # building several devices in one build ("One Build should only build for one
 # device/target", even when they share a common tree), so this refuses more than one.
-# Device trees and device vendor trees both come from their pixelos-16.2 branches (the
+# Device trees and device vendor trees both come from their pixelos-17 branches (the
 # vendor ones add the hardware/samsung namespace import that libteecl needs).
 # WHY each step:
-#  - the workspace is re-initialised to PixelOS's sixteen-qpr2 manifest, so the node
+#  - the workspace is re-initialised to PixelOS's seventeen manifest, so the node
 #    builds that branch whatever Crave's project happens to be cached at; with
 #    --depth=1, which Crave's admins require (full history wastes their storage and
 #    bandwidth; the build needs none of it);
@@ -20,7 +20,7 @@
 VARIANT=${VARIANT:-userdebug}
 # DEVICES is the old name of DEVICE; either may be given, with exactly one device.
 DEVICE=${DEVICE:-$DEVICES}
-BRANCH=${BRANCH:-pixelos-16.2}
+BRANCH=${BRANCH:-pixelos-17}
 COMMON=device/samsung/exynos7885-common
 RAW=https://raw.githubusercontent.com/Shaheddan/android_device_samsung_exynos7885-common/$BRANCH
 
@@ -34,9 +34,9 @@ case " a10 a20 a20e a30 a30s a40 " in
   *" $DEVICE "*) ;;
   *) echo "!! unknown device '$DEVICE' (known: a10 a20 a20e a30 a30s a40)"; exit 1 ;;
 esac
-echo "== PixelOS 16.2 $VARIANT for $DEVICE"
+echo "== PixelOS 17 $VARIANT for $DEVICE"
 
-repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b sixteen-qpr2 --git-lfs --depth=1 \
+repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b seventeen --git-lfs --depth=1 \
   || { echo "!! repo init failed"; exit 1; }
 rm -rf .repo/local_manifests && mkdir -p .repo/local_manifests || exit 1
 curl -sfL "$RAW/manifests/exynos7885.xml" -o .repo/local_manifests/exynos7885.xml \
