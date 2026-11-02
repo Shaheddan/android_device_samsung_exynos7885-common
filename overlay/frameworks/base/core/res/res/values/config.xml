@@ -157,8 +157,11 @@
         autodetected from the Configuration. -->
    <bool name="config_showNavigationBar">true</bool>
 
-   <!-- The max scale for the wallpaper when it's zoomed in -->
-   <item name="config_wallpaperMaxScale" format="float" type="dimen">1.00</item>
+   <!-- The max scale for the wallpaper when it's zoomed in. Keep Android's own 1.10: the
+        launcher works out how much to blur the home screen behind the app drawer from this
+        (bottom sheet depth = how far 1.10 x 0.97 sits between 1.10 and 1), and 1.00 made
+        that 0, so the drawer showed the home screen sharp instead of blurred. -->
+   <item name="config_wallpaperMaxScale" format="float" type="dimen">1.10</item>
 
    <!-- Enable system navigation keys. -->
    <bool name="config_supportSystemNavigationKeys">true</bool>
