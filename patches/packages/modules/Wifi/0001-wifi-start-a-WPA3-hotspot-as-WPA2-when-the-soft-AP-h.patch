@@ -1,0 +1,54 @@
+From cd9927774dcae60121898ec5835458876f5470a9 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Mon, 2 Nov 2026 16:42:06 +0330
+Subject: [PATCH] wifi: start a WPA3 hotspot as WPA2 when the soft AP has no
+ SAE
+
+Settings can save a WPA3 or WPA2/WPA3 hotspot config even when the device's
+soft AP cannot do WPA3-SAE (config_wifi_softap_sae_supported is false). Such a
+config is never fixed up, so every hotspot start fails in SoftApManager with
+"Error, SAE requires HAL support" / "Unsupported Configuration detect!" and
+the hotspot never turns on.
+
+When the persisted config is read, switch WPA3-SAE and WPA2/WPA3 to WPA2,
+keeping the user's password when WPA2 accepts it (6 GHz configs are left
+alone, as 6 GHz needs WPA3). The converted config is saved back, so Settings
+shows WPA2 from then on.
+---
+ .../server/wifi/WifiApConfigStore.java        | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/service/java/com/android/server/wifi/WifiApConfigStore.java b/service/java/com/android/server/wifi/WifiApConfigStore.java
+index 06cfc0d..b1ef92b 100644
+--- a/service/java/com/android/server/wifi/WifiApConfigStore.java
++++ b/service/java/com/android/server/wifi/WifiApConfigStore.java
+@@ -419,6 +419,26 @@ public class WifiApConfigStore {
+         } else if (bands.length > 0 && newChannels.valueAt(0) == 0) {
+             convertedConfigBuilder.setBand(newChannels.keyAt(0));
+         }
++        // A saved WPA3 or WPA2/WPA3 hotspot can never start on a device whose soft AP has no
++        // WPA3-SAE support: SoftApManager rejects it ("SAE requires HAL support") on every
++        // try. Only a restored backup gets converted (resetToDefaultForUnsupportedConfig),
++        // but Settings can still save such a config, so use WPA2 for it here and keep the
++        // user's password when WPA2 accepts it. 6 GHz needs WPA3, so leave that alone.
++        boolean has6g = false;
++        for (int i = 0; i < newChannels.size(); i++) {
++            has6g |= (newChannels.keyAt(i) & SoftApConfiguration.BAND_6GHZ) != 0;
++        }
++        if (!has6g && !ApConfigUtil.isWpa3SaeSupported(mContext)
++                && (config.getSecurityType() == SECURITY_TYPE_WPA3_SAE
++                || config.getSecurityType() == SECURITY_TYPE_WPA3_SAE_TRANSITION)) {
++            try {
++                convertedConfigBuilder.setPassphrase(config.getPassphrase(),
++                        SECURITY_TYPE_WPA2_PSK);
++            } catch (IllegalArgumentException e) {
++                convertedConfigBuilder.setPassphrase(generatePassword(), SECURITY_TYPE_WPA2_PSK);
++            }
++            Log.i(TAG, "Soft AP has no WPA3-SAE support, using WPA2 for the hotspot");
++        }
+         return convertedConfigBuilder.build();
+     }
+ 
+-- 
+2.43.0
+
