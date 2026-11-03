@@ -8,5 +8,8 @@ allow hal_power_default sysfs_sec_touchscreen:file r_file_perms;
 allow hal_power_default sysfs_decon:dir search;
 w_file_recursive(hal_power_default, sysfs_battery_saver)
 
+# CPU minimum-speed boosts (scaling_min_freq) for touch and app launch
+allow hal_power_default sysfs_devices_system_cpu:file rw_file_perms;
+
 set_prop(hal_power_default, vendor_powerhal_prop)
 

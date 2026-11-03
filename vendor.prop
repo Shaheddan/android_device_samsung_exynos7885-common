@@ -58,6 +58,10 @@ dalvik.vm.dex2oat64.enabled=true
 
 ## Power HAL
 vendor.powerhal.disp.idle_support=false
+# Touch boost length: 650 ms after a touch (the HAL adds 650 ms to the touch's own
+# duration), not the HAL's default of at least 1.4 s per touch, to spare the battery.
+vendor.powerhal.interaction.min=500
+vendor.powerhal.interaction.max=2000
 
 ## Vibrator HAL
 ro.vendor.vibrator_hal.click_duration=75
