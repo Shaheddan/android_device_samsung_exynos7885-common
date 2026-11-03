@@ -444,6 +444,34 @@ on boot
     chown system system /sys/devices/system/cpu/cpu6/cpufreq/interactive/io_is_busy
     chmod 0660 /sys/devices/system/cpu/cpu6/cpufreq/interactive/io_is_busy
 
+    # Interactive governor tuning. It ran with its jump to a high speed switched off
+    # (hispeed_freq 0, go_hispeed_load 100), so after a touch the CPUs climbed one step
+    # per 20 ms sample and the UI lagged behind the finger. Jump to a mid speed at
+    # 85% (little) / 90% (big) load, scale by target load above it, keep a speed for
+    # 40 ms and count storage waits as busy (app launches read a lot). Every speed
+    # used here is in the tables of all six phones (Exynos 7884B and 7904).
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 1144000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 85
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "75 1144000:85 1352000:90"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay "20000 1352000:40000"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/hispeed_freq 1352000
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/go_hispeed_load 90
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/target_loads "80 1352000:85 1560000:90"
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/above_hispeed_delay "20000 1560000:40000"
+    write /sys/devices/system/cpu/cpu6/cpufreq/interactive/io_is_busy 1
+
+    # The power HAL (system) raises the minimum speed for touch and app-launch boosts
+    # (configs/power/powerhint.json).
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+    chmod 0664 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+    chown system system /sys/devices/system/cpu/cpu6/cpufreq/scaling_min_freq
+    chmod 0664 /sys/devices/system/cpu/cpu6/cpufreq/scaling_min_freq
+
 # Mount cpuset group for cameraserver
     mkdir /dev/cpuset/cameraserver
     copy /dev/cpuset/cpus /dev/cpuset/cameraserver/cpus
