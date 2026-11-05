@@ -1,0 +1,7 @@
+# Key layout for the Samsung fingerprint HAL's gesture device (uinput-sec-fp).
+# The HAL reports a swipe down / up on the sensor as KEY_DOWN / KEY_UP; mapping
+# them to the system navigation keys makes "Swipe fingerprint for notifications"
+# open and close the notification shade.
+
+key 108   SYSTEM_NAVIGATION_DOWN
+key 103   SYSTEM_NAVIGATION_UP
