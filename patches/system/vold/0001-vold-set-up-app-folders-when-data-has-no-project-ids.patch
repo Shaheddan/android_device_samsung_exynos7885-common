@@ -1,0 +1,48 @@
+From f67fa8dd2e0bb23d860a941bf2159d9b86570de8 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Thu, 5 Nov 2026 15:01:48 +0330
+Subject: [PATCH] vold: set up app folders when /data has no project ids
+
+Without sdcardfs, vold tags every app's Android/data, obb and media folder
+with a quota project id. On a /data made without project id support (ext4
+without the "project" feature, f2fs without project_quota) the ioctl fails
+with EOPNOTSUPP, so setupAppDir/fixupAppDir fail and the app's external
+folders are never created: getExternalCacheDir() and friends return null.
+Telegram then cannot stage anything it sends ("unsupported attachment"),
+and every app trying to use its Android/data folder fails the same way
+("Failed to set project id on /data/media/0/Android/data/<app>/: Operation
+not supported on transport endpoint").
+
+Project ids only feed the per-app storage accounting, so treat a filesystem
+without them as "nothing to set" and carry on, with one warning.
+---
+ Utils.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/Utils.cpp b/Utils.cpp
+index c2b2ad3..0dcb2e6 100644
+--- a/Utils.cpp
++++ b/Utils.cpp
+@@ -245,6 +245,19 @@ int SetQuotaProjectId(const std::string& path, long projectId) {
+     fsx.fsx_projid = projectId;
+     ret = ioctl(fd, FS_IOC_FSSETXATTR, &fsx);
+     if (ret == -1) {
++        if (errno == EOPNOTSUPP) {
++            // The filesystem has no project ids (an ext4 /data without the "project"
++            // feature, or an f2fs one without project_quota), which happens on devices that
++            // use FUSE without sdcardfs on an older /data. Project ids only feed the
++            // per-app storage accounting, so carry on without them; failing here would stop
++            // vold from creating apps' Android/data, obb and media folders at all.
++            static std::once_flag warned;
++            std::call_once(warned, [&] {
++                LOG(WARNING) << "No project id support on " << path
++                             << "; app folders are set up without quota project ids";
++            });
++            return 0;
++        }
+         PLOG(ERROR) << "Failed to set project id on " << path;
+         return ret;
+     }
+-- 
+2.43.0
+
