@@ -1,0 +1,30 @@
+From e53ada76fcf01b45c4a090fa8e9fa26b547f73cf Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Thu, 5 Nov 2026 15:02:36 +0330
+Subject: [PATCH] vold: treat an f2fs /data without project ids as legacy too
+
+IsLegacyUserdata() lets vold carry on when a /data without project id
+support refuses a quota project id, but only for ext4. An f2fs /data made
+without project_quota fails the same way (EOPNOTSUPP), so setupAppDir fails,
+apps get no Android/data folders and getExternalCacheDir() returns null
+(Telegram: "unsupported attachment"). Accept f2fs as well.
+---
+ Utils.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Utils.cpp b/Utils.cpp
+index 99586fc..d447b38 100644
+--- a/Utils.cpp
++++ b/Utils.cpp
+@@ -234,7 +234,7 @@ bool IsLegacyUserdata(const std::string& path) {
+         PLOG(WARNING) << "statfs failed for " << path;
+         return false;
+     }
+-    return (s.f_type == EXT4_SUPER_MAGIC);
++    return (s.f_type == EXT4_SUPER_MAGIC || s.f_type == F2FS_SUPER_MAGIC);
+ }
+ 
+ int SetQuotaProjectId(const std::string& path, long projectId) {
+-- 
+2.43.0
+
