@@ -235,7 +235,6 @@
    <bool name="config_device_vt_available">true</bool>
    <string name="config_wlan_data_service_package">com.google.android.iwlan</string>
    <string name="config_wlan_network_service_package">com.google.android.iwlan</string>
-   <string name="config_qualified_networks_service_package">com.android.telephony.qns</string>
 
    <!-- Array of desired screen brightness in nits corresponding to the lux values
         in the config_autoBrightnessLevels array. As with config_screenBrightnessMinimumNits and

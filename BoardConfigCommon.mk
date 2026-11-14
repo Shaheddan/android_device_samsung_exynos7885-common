@@ -70,7 +70,8 @@ $(call soong_config_set,samsungVars,target_keymaster4_library,//vendor/samsung/e
 DEVICE_MANIFEST_FILE := $(COMMON_PATH)/manifest.xml
 DEVICE_MATRIX_FILE := $(COMMON_PATH)/compatibility_matrix.xml
 DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE := \
-    hardware/samsung/vintf/samsung_framework_compatibility_matrix.xml
+    hardware/samsung/vintf/samsung_framework_compatibility_matrix.xml \
+    vendor/lineage/config/device_framework_matrix.xml
 
 # Touch HAL: it registers every feature the touch driver lists in
 # /sys/class/sec/tsp/cmd_list (glove_mode -> IGloveMode, hover_enable ->
@@ -141,7 +142,7 @@ SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(COMMON_PATH)/sepolicy/private
 OVERRIDE_ENABLE_UFFD_GC := false
 
 # Vibrator
-$(call soong_config_set_bool,samsungVibratorVars,duration_amplitude,true)
+$(call soong_config_set,samsungVibratorVars,duration_amplitude,true)
 
 # Wifi
 BOARD_WLAN_DEVICE                := slsi

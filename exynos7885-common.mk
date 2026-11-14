@@ -24,12 +24,14 @@ TARGET_EXCLUDES_AUDIOFX := true
 # GMS
 TARGET_USES_MINI_GAPPS := true
 
-# IMS over Wi-Fi data service and network qualification service.
-# These are also useful for VoLTE-only bring-up because the telephony
+# IMS over Wi-Fi data service.
+# This is also useful for VoLTE-only bring-up because the telephony
 # framework still expects the WLAN data/network service hooks to exist.
+# LineageOS 22.2 has no QualifiedNetworksService project, so there is no
+# Wi-Fi <-> LTE handover here: every data connection, IMS included, stays
+# on mobile data, which is what VoLTE uses.
 PRODUCT_PACKAGES += \
     Iwlan \
-    QualifiedNetworksService \
     PhhIms
 
 PRODUCT_COPY_FILES += \
@@ -139,9 +141,9 @@ PRODUCT_PACKAGES += \
 $(call soong_config_set,lineage_health,charging_control_charging_path,/sys/class/power_supply/battery/hmt_ta_charge)
 $(call soong_config_set,lineage_health,charging_control_charging_enabled,1)
 $(call soong_config_set,lineage_health,charging_control_charging_disabled,0)
-$(call soong_config_set_bool,lineage_health,charging_control_supports_bypass,true)
-$(call soong_config_set_bool,lineage_health,charging_control_supports_toggle,true)
-$(call soong_config_set_bool,lineage_health,charging_control_supports_deadline,false)
+$(call soong_config_set,lineage_health,charging_control_supports_bypass,true)
+$(call soong_config_set,lineage_health,charging_control_supports_toggle,true)
+$(call soong_config_set,lineage_health,charging_control_supports_deadline,false)
 ifneq ($(TARGET_DEVICE),a10)
 $(call soong_config_set,lineage_health,fast_charge_node,/sys/class/sec/switch/afc_disable)
 $(call soong_config_set,lineage_health,fast_charge_value_none,1)
