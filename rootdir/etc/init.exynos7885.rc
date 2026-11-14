@@ -395,6 +395,16 @@ on boot
     chown radio system /sys/devices/platform/11500000.mali/dvfs_max_lock
     chmod 0664 /sys/devices/platform/11500000.mali/dvfs_max_lock
 
+    # The power HAL keeps the GPU at 676 MHz and lets the scheduler move busy threads to
+    # the big cores (HMP boost) while you touch, scroll or open an app. Measured on the
+    # A30: the GPU otherwise sat at 343 MHz during animations and the UI threads stayed
+    # on the little cores, so ~28% of launcher frames came late; with both, ~20%.
+    # 676 MHz is the top GPU clock on the 7884B phones (A10/A20/A20e), so it works on all.
+    chown system system /sys/kernel/gpu/gpu_min_clock
+    chmod 0664 /sys/kernel/gpu/gpu_min_clock
+    chown system system /sys/kernel/hmp/boost
+    chmod 0664 /sys/kernel/hmp/boost
+
     # Change permission for interactive governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
