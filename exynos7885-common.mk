@@ -89,12 +89,14 @@ PRODUCT_PACKAGES += \
     android.hardware.gatekeeper@1.0-service
 
 # Graphics
+# LineageOS 22.2's gralloc3 module is named after TARGET_BOARD_PLATFORM (exynos7885 on
+# all six phones), not TARGET_SOC, and is loaded through ro.board.platform.
 PRODUCT_PACKAGES += \
     android.hardware.graphics.allocator@2.0-impl:64 \
     android.hardware.graphics.allocator@2.0-service \
     android.hardware.graphics.mapper@2.0-impl-2.1 \
     android.hardware.composer.hwc3-service.slsi \
-    gralloc.$(TARGET_SOC)
+    gralloc.exynos7885
 
 # Health
 PRODUCT_PACKAGES += \
