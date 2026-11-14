@@ -11,5 +11,10 @@ w_file_recursive(hal_power_default, sysfs_battery_saver)
 # CPU minimum-speed boosts (scaling_min_freq) for touch and app launch
 allow hal_power_default sysfs_devices_system_cpu:file rw_file_perms;
 
+# GPU minimum clock and HMP boost for touch, app launch and blur-heavy frames
+allow hal_power_default sysfs_gpu:dir search;
+allow hal_power_default sysfs_gpu_writable:file rw_file_perms;
+allow hal_power_default sysfs_hmp_boost:file rw_file_perms;
+
 set_prop(hal_power_default, vendor_powerhal_prop)
 
