@@ -42,6 +42,13 @@
   <project path="device/samsung_slsi/sepolicy" name="Shaheddan/android_device_samsung_slsi_sepolicy" remote="github" revision="lineage-22.2" />
   <project path="hardware/samsung-ext/interfaces" name="Shaheddan/hardware_samsung-extra_interfaces" remote="github" revision="lineage-22.2" />
 
+  <!-- slsi-linaro repos the forks above need on 22.2 (LineageOS's own): config.mk adds all
+       three to PRODUCT_SOONG_NAMESPACES and the exynos and openmax namespaces import
+       interfaces -->
+  <project path="hardware/samsung_slsi-linaro/interfaces" name="LineageOS/android_hardware_samsung_slsi-linaro_interfaces" remote="github" />
+  <project path="hardware/samsung_slsi-linaro/exynos5" name="LineageOS/android_hardware_samsung_slsi-linaro_exynos5" remote="github" />
+  <project path="hardware/samsung_slsi-linaro/codec2" name="LineageOS/android_hardware_samsung_slsi-linaro_codec2" remote="github" />
+
   <!-- IMS (VoLTE). Its rnnoise submodule comes through sync-s; the AEC3 commit it pins
        is not on any upstream branch, so it is fetched as its own project, as Royna does. -->
   <project path="packages/apps/PhhIms" name="krazey/ims" remote="github" revision="main" sync-s="true" />
