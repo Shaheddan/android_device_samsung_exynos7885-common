@@ -1,0 +1,49 @@
+From 831c5ecce681f6e61eeeecf84439ae618efe8d71 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Wed, 15 Oct 2025 21:05:49 +0100
+Subject: [PATCH 2/5] fingerprint: FOD -> UDFPS
+
+Change-Id: I0b6be82483d8fc6bb74a529c2962d1e4b40cf04a
+(cherry picked from commit 7d56e57ca72875a8e92b62bb167eca5af7e6e5ac)
+---
+ fingerprint/Android.bp         | 2 +-
+ fingerprint/UdfpsExtension.cpp | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/fingerprint/Android.bp b/fingerprint/Android.bp
+index bf894b6d..999ffdd6 100644
+--- a/fingerprint/Android.bp
++++ b/fingerprint/Android.bp
+@@ -8,7 +8,7 @@ cc_library_static {
+     name: "libudfps_extension.samsung",
+     srcs: ["UdfpsExtension.cpp"],
+     cflags: select(soong_config_variable("samsungUdfpsVars", "udfps_zorder"), {
+-        any @ zorder: ["-DFOD_PRESSED_LAYER_ZORDER=" + zorder],
++        any @ zorder: ["-DUDFPS_PRESSED_LAYER_ZORDER=" + zorder],
+         default: [],
+     }),
+     include_dirs: [
+diff --git a/fingerprint/UdfpsExtension.cpp b/fingerprint/UdfpsExtension.cpp
+index 1d344fde..ce6e9117 100644
+--- a/fingerprint/UdfpsExtension.cpp
++++ b/fingerprint/UdfpsExtension.cpp
+@@ -1,6 +1,6 @@
+ 
+ /*
+- * Copyright (C) 2022-2024 The LineageOS Project
++ * Copyright (C) 2022-2025 The LineageOS Project
+  *
+  * SPDX-License-Identifier: Apache-2.0
+  */
+@@ -13,7 +13,7 @@ uint32_t getUdfpsDimZOrder(uint32_t z) {
+ 
+ uint32_t getUdfpsZOrder(uint32_t z, bool touched) {
+     if (touched) {
+-        z |= FOD_PRESSED_LAYER_ZORDER;
++        z |= UDFPS_PRESSED_LAYER_ZORDER;
+     }
+     return z;
+ }
+-- 
+2.43.0
+

@@ -1,0 +1,31 @@
+From b1c0681d2ba53db36c406bc0bf5ad8b83afb5cd9 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Sat, 27 Sep 2025 12:11:55 +0100
+Subject: [PATCH 4/5] fingerprint: Set defaults if no Z-order is set
+
+Change-Id: If905bf143de7bd9232c83daa664d77067bec2aa6
+(cherry picked from commit 4f3afca5e2af0b447b3efd3973ecb69c63a5f918)
+---
+ fingerprint/Android.bp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fingerprint/Android.bp b/fingerprint/Android.bp
+index c0b94acf..8cd35b70 100644
+--- a/fingerprint/Android.bp
++++ b/fingerprint/Android.bp
+@@ -9,10 +9,10 @@ cc_library_static {
+     srcs: ["UdfpsExtension.cpp"],
+     cflags: select(soong_config_variable("samsungUdfpsVars", "dim_layer_zorder"), {
+         any @ dim_layer_zorder: ["-DUDFPS_DIM_LAYER_ZORDER=" + dim_layer_zorder],
+-        default: [],
++        default: ["-DUDFPS_DIM_LAYER_ZORDER=0"],
+     }) + select(soong_config_variable("samsungUdfpsVars", "udfps_zorder"), {
+         any @ zorder: ["-DUDFPS_PRESSED_LAYER_ZORDER=" + zorder],
+-        default: [],
++        default: ["-DUDFPS_PRESSED_LAYER_ZORDER=0"],
+     }),
+     include_dirs: [
+         "frameworks/native/services/surfaceflinger/CompositionEngine/include",
+-- 
+2.43.0
+

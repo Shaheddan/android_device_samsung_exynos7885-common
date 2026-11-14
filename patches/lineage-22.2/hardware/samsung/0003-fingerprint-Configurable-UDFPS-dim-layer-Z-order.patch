@@ -1,0 +1,48 @@
+From 7f631217962c218788d2b18c43ea645cabd776af Mon Sep 17 00:00:00 2001
+From: Kai Jones <kvjones0243@gmail.com>
+Date: Thu, 30 Jan 2025 18:51:27 -0800
+Subject: [PATCH 3/5] fingerprint: Configurable UDFPS dim layer Z-order
+
+Introduce a build-time configuration for UDFPS dim layer Z-order.
+Define `fod_dim_layer_zorder` via Soong, dynamically set using:
+
+  $(call soong_config_set,samsungUdfpsVars,dim_layer_zorder,0x20000001u)
+
+Change-Id: Ie1d5e78894e191150be235eb48e400ea1feab9b2
+(cherry picked from commit 9cd7567ec6489ff915864883da13d88ebdd61fd7)
+---
+ fingerprint/Android.bp         | 5 ++++-
+ fingerprint/UdfpsExtension.cpp | 1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/fingerprint/Android.bp b/fingerprint/Android.bp
+index 999ffdd6..c0b94acf 100644
+--- a/fingerprint/Android.bp
++++ b/fingerprint/Android.bp
+@@ -7,7 +7,10 @@
+ cc_library_static {
+     name: "libudfps_extension.samsung",
+     srcs: ["UdfpsExtension.cpp"],
+-    cflags: select(soong_config_variable("samsungUdfpsVars", "udfps_zorder"), {
++    cflags: select(soong_config_variable("samsungUdfpsVars", "dim_layer_zorder"), {
++        any @ dim_layer_zorder: ["-DUDFPS_DIM_LAYER_ZORDER=" + dim_layer_zorder],
++        default: [],
++    }) + select(soong_config_variable("samsungUdfpsVars", "udfps_zorder"), {
+         any @ zorder: ["-DUDFPS_PRESSED_LAYER_ZORDER=" + zorder],
+         default: [],
+     }),
+diff --git a/fingerprint/UdfpsExtension.cpp b/fingerprint/UdfpsExtension.cpp
+index ce6e9117..e3e7cab4 100644
+--- a/fingerprint/UdfpsExtension.cpp
++++ b/fingerprint/UdfpsExtension.cpp
+@@ -8,6 +8,7 @@
+ #include <compositionengine/UdfpsExtension.h>
+ 
+ uint32_t getUdfpsDimZOrder(uint32_t z) {
++    z |= UDFPS_DIM_LAYER_ZORDER;
+     return z;
+ }
+ 
+-- 
+2.43.0
+

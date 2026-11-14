@@ -1,0 +1,63 @@
+From 32203a1d626c4729b268848e751915763c18ca56 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Fri, 5 Sep 2025 20:10:33 +0100
+Subject: [PATCH 1/5] samsung: Normalize vars namespaces
+
+Change-Id: Iaef6bef86e572192c524dbb27cad58235523751c
+(cherry picked from commit 73dc7748527b157a15e36aeae5740a2f01c8fed6)
+---
+ aidl/codec2/Android.bp | 6 +++---
+ fingerprint/Android.bp | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/aidl/codec2/Android.bp b/aidl/codec2/Android.bp
+index 5331a09c..2424c860 100644
+--- a/aidl/codec2/Android.bp
++++ b/aidl/codec2/Android.bp
+@@ -27,7 +27,7 @@ cc_binary {
+ // legacy_default0 -> For devices that already have a c2@1.0 service in their vendor (QTI c2, Samsung hardware c2 etc.)
+ // legacy_default -> For devices without a c2 service in their vendor
+ //
+-    vintf_fragments: select(soong_config_variable("SamsungCodec2Vars", "c2_instance_type"), {
++    vintf_fragments: select(soong_config_variable("samsungCodec2Vars", "c2_instance_type"), {
+         any @ fragment: ["samsung_media_c2_" + fragment + ".xml"],
+         default: ["samsung_media_c2_default.xml"],
+     }),
+@@ -46,12 +46,12 @@ cc_binary {
+         "libavservices_minijail",
+         "libbinder",
+         "libbinder_ndk",
+-    ] + select(soong_config_variable("SamsungCodec2Vars", "target_componentstore_library"), {
++    ] + select(soong_config_variable("samsungCodec2Vars", "target_componentstore_library"), {
+         any @ flag_val: [flag_val],
+         default: [],
+     }),
+ 
+-    cflags: select(soong_config_variable("SamsungCodec2Vars", "uses_legacy_component_store"), {
++    cflags: select(soong_config_variable("samsungCodec2Vars", "uses_legacy_component_store"), {
+         "true": ["-DLEGACY_COMPONENT_STORE" ],
+         default: [],
+     }),
+diff --git a/fingerprint/Android.bp b/fingerprint/Android.bp
+index 37366bdb..bf894b6d 100644
+--- a/fingerprint/Android.bp
++++ b/fingerprint/Android.bp
+@@ -1,5 +1,5 @@
+ //
+-// Copyright (C) 2022-2024 The LineageOS Project
++// Copyright (C) 2022-2025 The LineageOS Project
+ //
+ // SPDX-License-Identifier: Apache-2.0
+ //
+@@ -7,7 +7,7 @@
+ cc_library_static {
+     name: "libudfps_extension.samsung",
+     srcs: ["UdfpsExtension.cpp"],
+-    cflags: select(soong_config_variable("samsung_udfps", "udfps_zorder"), {
++    cflags: select(soong_config_variable("samsungUdfpsVars", "udfps_zorder"), {
+         any @ zorder: ["-DFOD_PRESSED_LAYER_ZORDER=" + zorder],
+         default: [],
+     }),
+-- 
+2.43.0
+
