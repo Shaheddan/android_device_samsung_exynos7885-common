@@ -8,12 +8,12 @@ package org.lineageos.settings.exynos;
 import android.content.Context;
 import android.util.Log;
 
-import com.android.internal.lineage.health.HealthInterface;
+import lineageos.health.HealthInterface;
 
 /**
- * The system's charging control and fast charge service (LineageOS health, built into
- * PixelOS's framework), which the stock "Charging control" and "Charging speed" entries
- * used. This page drives the same settings, so the schedules, the limit, the
+ * The system's charging control and fast charge service (LineageOS health, reached
+ * through the Lineage SDK), which the stock "Charging control" and "Charging speed"
+ * entries used. This page drives the same settings, so the schedules, the limit, the
  * notification and the HAL behave exactly as they did there; only the backend node of
  * the HAL changed (hmt_ta_charge, true bypass).
  *
