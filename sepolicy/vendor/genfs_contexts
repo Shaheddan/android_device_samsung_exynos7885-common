@@ -124,7 +124,6 @@ genfscon sysfs /module/modem_ctrl_ss310ap/parameters/ds_detect                  
 genfscon sysfs /module/scsc_bt/parameters/bluetooth_address                       u:object_r:sysfs_bt_writable:s0
 genfscon sysfs /kernel/gpu/                                                       u:object_r:sysfs_gpu:s0
 genfscon sysfs /kernel/gpu/gpu_max_clock                                          u:object_r:sysfs_gpu_writable:s0
-genfscon sysfs /kernel/gpu/gpu_min_clock                                          u:object_r:sysfs_gpu_writable:s0
 genfscon sysfs /kernel/hmp/boost                                                  u:object_r:sysfs_hmp_boost:s0
 
 genfscon sysfs /devices/platform/11500000.mali/dma_buf_gpu_mem                    u:object_r:sysfs_gpu:s0
