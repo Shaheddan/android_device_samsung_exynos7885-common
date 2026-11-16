@@ -236,8 +236,11 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     android.hardware.power-service.pixel-libperfmgr
 
+# powerhint.json is what the HAL starts with; init then restarts it with the file of the
+# performance profile chosen in Settings, made for this SoC by configs/power/gen_profiles.py.
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/power/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
+    $(LOCAL_PATH)/configs/power/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json \
+    $(foreach p,stock light smooth fast max oc1 oc2,$(LOCAL_PATH)/configs/power/$(TARGET_SOC)/powerhint-$(p).json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint-$(p).json)
 
 # Protobuf
 PRODUCT_PACKAGES += \

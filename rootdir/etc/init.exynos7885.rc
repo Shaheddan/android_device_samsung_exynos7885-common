@@ -720,3 +720,52 @@ service watchdogd /system/bin/watchdogd 10 20
     class core
     user root
     seclabel u:r:watchdogd:s0
+
+# Performance profiles (Settings > System > Performance)
+# The profile chosen in Settings is read once per boot, as soon as the persistent
+# properties are loaded, so choosing another one only takes effect after a restart.
+on property:ro.persistent_properties.ready=true
+    setprop exynos.perf.request ${persist.exynos.perf.profile:-smooth}
+
+on property:exynos.perf.request=stock
+    setprop exynos.perf.active stock
+
+on property:exynos.perf.request=light
+    setprop exynos.perf.active light
+
+on property:exynos.perf.request=smooth
+    setprop exynos.perf.active smooth
+
+on property:exynos.perf.request=fast
+    setprop exynos.perf.active fast
+
+on property:exynos.perf.request=max
+    setprop exynos.perf.active max
+
+# Overclock guard. The first boot on an overclock profile marks it "-trial"; ExynosParts
+# drops the mark once the phone has run 3 minutes on it or shuts down cleanly. A mark
+# still there at the next boot means the phone restarted by itself, so it goes to Max.
+on property:exynos.perf.request=oc1
+    setprop persist.exynos.perf.profile oc1-trial
+    setprop exynos.perf.active oc1
+
+on property:exynos.perf.request=oc2
+    setprop persist.exynos.perf.profile oc2-trial
+    setprop exynos.perf.active oc2
+
+on property:exynos.perf.request=oc1-trial
+    setprop persist.exynos.perf.profile max
+    setprop exynos.perf.fallback oc1
+    setprop exynos.perf.active max
+
+on property:exynos.perf.request=oc2-trial
+    setprop persist.exynos.perf.profile max
+    setprop exynos.perf.fallback oc2
+    setprop exynos.perf.active max
+
+# The power HAL reads its config only when it starts (at late-fs, before /data is up),
+# so restart it with the profile's file. It applies nothing until boot has completed:
+# that is when the overclock caps get written, never during boot.
+on property:exynos.perf.active=*
+    setprop vendor.powerhal.config powerhint-${exynos.perf.active}.json
+    restart vendor.power-hal-aidl
