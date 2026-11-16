@@ -8,9 +8,12 @@
     android:sharedUserId="android.uid.system">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Performance restarts the phone to switch profiles. -->
+    <uses-permission android:name="android.permission.REBOOT" />
 
     <!-- persistent: the bypass service has to be running to catch every plug-in. -->
     <application
+        android:name=".ExynosPartsApp"
         android:label="@string/app_title"
         android:persistent="true"
         android:theme="@style/Theme.SubSettingsBase">
@@ -26,6 +29,48 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Settings > System > Performance: listed on that page by Settings itself
+             (IA_SETTINGS tile), with the active profile as its summary. -->
+        <activity
+            android:name=".PerformanceActivity"
+            android:label="@string/perf_title"
+            android:icon="@drawable/ic_settings_performance"
+            android:theme="@style/Theme.Performance"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+            </intent-filter>
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.system" />
+            <meta-data
+                android:name="com.android.settings.icon"
+                android:resource="@drawable/ic_settings_performance" />
+            <meta-data
+                android:name="com.android.settings.summary_uri"
+                android:value="content://org.lineageos.settings.exynos.performance/getDynamicSummary/performance" />
+        </activity>
+
+        <!-- The same page in the app drawer; the switch on the page turns this off. -->
+        <activity-alias
+            android:name=".PerformanceLauncher"
+            android:targetActivity=".PerformanceActivity"
+            android:label="@string/perf_title"
+            android:icon="@drawable/ic_performance"
+            android:roundIcon="@drawable/ic_performance"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <provider
+            android:name=".PerfSummaryProvider"
+            android:authorities="org.lineageos.settings.exynos.performance"
+            android:exported="true" />
 
         <receiver
             android:name=".BootReceiver"

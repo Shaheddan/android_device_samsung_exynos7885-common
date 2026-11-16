@@ -78,4 +78,75 @@
     <string name="status_full_summary">The charger is powering the phone</string>
     <string name="status_starting_title">Starting bypass…</string>
     <string name="status_starting_summary">Takes effect in a moment</string>
+
+    <!-- Settings > System > Performance -->
+    <string name="perf_title">Performance</string>
+    <string name="perf_back">Back</string>
+    <string name="perf_active_label">Active profile</string>
+    <string name="perf_since_restart">Since the last restart</string>
+    <string name="perf_after_restart">%1$s after a restart</string>
+    <string name="perf_fell_back_status">%1$s was turned off</string>
+    <string name="perf_live_hint">Live clock speeds, updated every second</string>
+    <string name="perf_little">Little cores</string>
+    <string name="perf_big">Big cores</string>
+    <string name="perf_gpu">Graphics</string>
+    <string name="perf_mhz">MHz</string>
+    <string name="perf_cap">max %1$d</string>
+    <string name="perf_idle">idle</string>
+    <string name="perf_off">off</string>
+    <string name="perf_gauge_desc">Speed level %1$d of 6: %2$s</string>
+
+    <string name="perf_header_profiles">Profiles</string>
+    <string name="perf_header_beyond">Beyond stock</string>
+    <string name="perf_header_shortcut">Shortcut</string>
+    <string name="perf_badge_default">Default</string>
+    <string name="perf_badge_active">Active</string>
+
+    <string name="perf_stock">Stock</string>
+    <string name="perf_stock_desc">No boost. The phone runs as Samsung tuned it.</string>
+    <string name="perf_light">Light</string>
+    <string name="perf_light_desc">A gentle lift when you touch the screen.</string>
+    <string name="perf_smooth">Smooth</string>
+    <string name="perf_smooth_desc">Fluid scrolling and quick app starts.</string>
+    <string name="perf_fast">Fast</string>
+    <string name="perf_fast_desc">Snappier with heavy apps and games.</string>
+    <string name="perf_max">Max</string>
+    <string name="perf_max_desc">Full speed every time you touch the screen.</string>
+    <string name="perf_oc1">Overclock 1</string>
+    <string name="perf_oc1_desc">Max, with speed limits above stock.</string>
+    <string name="perf_oc2">Overclock 2</string>
+    <string name="perf_oc2_desc">The highest speeds and the most heat.</string>
+
+    <string name="perf_meta_stock">No boost · up to %1$s</string>
+    <string name="perf_meta_touch">On touch: processor %1$s · graphics %2$s</string>
+    <string name="perf_meta_max">On touch: full speed, up to %1$s</string>
+    <string name="perf_meta_oc">Up to %1$s · graphics %2$s</string>
+    <string name="perf_ghz">%1$s GHz</string>
+    <string name="perf_mhz_value">%1$d MHz</string>
+    <string name="perf_plus">+%1$d%%</string>
+
+    <string name="perf_warning_title">These profiles may make your phone unstable</string>
+    <string name="perf_warning_body">They run the processor and graphics faster than Samsung allows. The phone can get hot, apps can close, and it can restart by itself. If it restarts by itself within 3 minutes of starting, Performance switches back to Max.</string>
+
+    <string name="perf_drawer_title">Show in app drawer</string>
+    <string name="perf_drawer_summary">Open Performance straight from your app list</string>
+    <string name="perf_footer">Heat protection always stays on. If the phone gets too warm it slows itself down, whatever profile you choose. A new profile starts after a restart.</string>
+    <string name="perf_chip_line">%1$s · stock %2$d / %3$d MHz, graphics %4$d MHz</string>
+
+    <string name="perf_bar_subtitle">Starts after a restart</string>
+    <string name="perf_bar_keep">Keep the current profile</string>
+    <string name="perf_restart">Restart</string>
+    <string name="perf_restart_now">Restart now</string>
+    <string name="perf_not_now">Not now</string>
+    <string name="perf_sheet_title">Restart to use %1$s?</string>
+    <string name="perf_sheet_body">Your phone restarts now and starts with %1$s. Save anything you are working on first.</string>
+    <string name="perf_sheet_oc_title">Overclock at your own risk</string>
+    <string name="perf_sheet_oc_body">%1$s lets the big cores reach %2$s and graphics %3$s. Your phone restarts now. If it restarts by itself within 3 minutes of starting, Performance switches back to Max.</string>
+    <string name="perf_sheet_ack">I understand my phone may become unstable</string>
+    <string name="perf_restarting">Restarting…</string>
+    <string name="perf_restart_failed">Could not restart the phone. Restart it yourself to apply the profile.</string>
+
+    <string name="perf_fallback_title">%1$s was turned off</string>
+    <string name="perf_fallback_body">Your phone restarted by itself soon after it started with %1$s, so Performance switched back to Max.</string>
+    <string name="perf_ok">OK</string>
 </resources>
