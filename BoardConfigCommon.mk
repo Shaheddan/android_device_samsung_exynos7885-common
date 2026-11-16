@@ -7,11 +7,6 @@ COMMON_PATH := device/samsung/exynos7885-common
 
 BOARD_VENDOR := samsung
 
-# SLSI Linaro
-include hardware/samsung_slsi-linaro/config/BoardConfig7885.mk
-
-BOARD_HWJPEG_ANDROID_VERSION := 11
-
 # Architecture
 TARGET_ARCH := arm64
 TARGET_ARCH_VARIANT := armv8-a
@@ -25,6 +20,17 @@ TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := cortex-a53
 
+# Display
+BOARD_MINIMUM_DISPLAY_BRIGHTNESS := 1
+
+# SLSI Linaro
+# Must come after TARGET_ARCH and BOARD_MINIMUM_DISPLAY_BRIGHTNESS: on lineage-22.2 its
+# hwc.mk turns them into the HWC's soong config right here (USES_ARCH_ARM64 picks the
+# 64-bit DECON addresses the arm64 kernel uses).
+include hardware/samsung_slsi-linaro/config/BoardConfig7885.mk
+
+BOARD_HWJPEG_ANDROID_VERSION := 11
+
 # Build system
 BUILD_BROKEN_DUP_RULES := true
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
@@ -33,9 +39,6 @@ BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 ifneq ($(TARGET_DEVICE),a10)
 $(call soong_config_set,exynos7885CameraVars,extra_ids,50)
 endif
-
-# Display
-BOARD_MINIMUM_DISPLAY_BRIGHTNESS := 1
 
 # DTBO
 BOARD_KERNEL_SEPARATED_DTBO := true
