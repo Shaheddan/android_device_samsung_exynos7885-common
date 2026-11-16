@@ -170,15 +170,17 @@ public class PerformanceActivity extends Activity {
         mFallback = PerfProfiles.fallback();
 
         getWindow().setBackgroundDrawable(new ColorDrawable(mC.bg));
+        buildPage();
+        setContentView(mRoot);
+
+        // Only after setContentView(): before it the window has no decor view yet and
+        // getInsetsController() throws instead of returning null.
         final WindowInsetsController wic = getWindow().getInsetsController();
         if (wic != null) {
             final int light = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                     | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
             wic.setSystemBarsAppearance(mC.night ? 0 : light, light);
         }
-
-        buildPage();
-        setContentView(mRoot);
         refresh(false);
     }
 
