@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- Performance app icon: a speed dial around a turning "cookie" shape with a bolt. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="4"
+        android:translateY="1">
+        <path
+            android:strokeColor="#47FFFFFF"
+            android:strokeWidth="7.5"
+            android:strokeLineCap="round"
+            android:pathData="M26.62,68.5 A27,27 0 1 1 73.38,68.5" />
+        <path
+            android:strokeColor="@android:color/system_accent3_100"
+            android:strokeWidth="7.5"
+            android:strokeLineCap="round"
+            android:trimPathEnd="0.72"
+            android:pathData="M26.62,68.5 A27,27 0 1 1 73.38,68.5" />
+        <path
+            android:fillColor="@android:color/system_accent1_100"
+            android:pathData="M50.00,37.50 L51.31,38.00 L52.43,39.21 L53.35,40.50 L54.28,41.25 L55.47,41.27 L57.00,40.88 L58.64,40.66 L59.96,41.13 L60.65,42.35 L60.72,44.00 L60.60,45.58 L60.83,46.75 L61.73,47.53 L63.16,48.21 L64.55,49.10 L65.26,50.31 L65.00,51.69 L64.00,53.00 L62.89,54.13 L62.31,55.17 L62.50,56.35 L63.16,57.79 L63.65,59.36 L63.42,60.75 L62.34,61.64 L60.72,62.00 L59.15,62.15 L58.03,62.58 L57.42,63.60 L57.00,65.12 L56.36,66.65 L55.30,67.57 L53.90,67.55 L52.43,66.79 L51.13,65.89 L50.00,65.50 L48.87,65.89 L47.57,66.79 L46.10,67.55 L44.70,67.57 L43.64,66.65 L43.00,65.12 L42.58,63.60 L41.97,62.58 L40.85,62.15 L39.28,62.00 L37.66,61.64 L36.58,60.75 L36.35,59.36 L36.84,57.79 L37.50,56.35 L37.69,55.17 L37.11,54.13 L36.00,53.00 L35.00,51.69 L34.74,50.31 L35.45,49.10 L36.84,48.21 L38.27,47.53 L39.17,46.75 L39.40,45.58 L39.28,44.00 L39.35,42.35 L40.04,41.13 L41.36,40.66 L43.00,40.88 L44.53,41.27 L45.72,41.25 L46.65,40.50 L47.57,39.21 L48.69,38.00 Z" />
+        <path
+            android:strokeColor="@android:color/system_accent1_900"
+            android:strokeWidth="3.2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M51.8,45.5 l-4.4,7.6 h6 l-4.4,7.6" />
+    </group>
+</vector>

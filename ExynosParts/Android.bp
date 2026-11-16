@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-// Settings > Battery > Charging for the Exynos7885 Galaxy phones: bypass charging,
-// charging control and charging speed on one page. Runs as system (platform key,
-// android.uid.system) to write the charger node and use the hidden health API.
+// Settings > Battery > Charging (bypass charging, charging control and charging speed)
+// and Settings > System > Performance (performance profiles) for the Exynos7885 Galaxy
+// phones. Runs as system (platform key, android.uid.system) to write the charger node,
+// use the hidden health API, set the profile property and restart the phone.
 android_app {
     name: "ExynosParts",
 
@@ -19,4 +20,13 @@ android_app {
     static_libs: [
         "org.lineageos.settings.resources",
     ],
+
+    required: ["privapp_allowlist_org.lineageos.settings.exynos"],
+}
+
+prebuilt_etc {
+    name: "privapp_allowlist_org.lineageos.settings.exynos",
+    src: "privapp_allowlist_org.lineageos.settings.exynos.xml",
+    sub_dir: "permissions",
+    system_ext_specific: true,
 }
