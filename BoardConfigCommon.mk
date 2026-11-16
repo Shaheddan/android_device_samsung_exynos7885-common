@@ -29,7 +29,12 @@ BOARD_MINIMUM_DISPLAY_BRIGHTNESS := 1
 # 64-bit DECON addresses the arm64 kernel uses).
 include hardware/samsung_slsi-linaro/config/BoardConfig7885.mk
 
+# The camera HAL blobs come from Android 11 firmware and hand libhwjpeg an Android 11
+# exif_attribute_t (32-byte model name; it is 64 bytes from version 12). On lineage-22.2
+# libhwjpeg is built from Android.bp, which only takes the version from soong config and
+# otherwise assumes 13.
 BOARD_HWJPEG_ANDROID_VERSION := 11
+$(call soong_config_set,libhwjpeg,HWJPEG_ANDROID_VERSION,$(BOARD_HWJPEG_ANDROID_VERSION))
 
 # Build system
 BUILD_BROKEN_DUP_RULES := true
