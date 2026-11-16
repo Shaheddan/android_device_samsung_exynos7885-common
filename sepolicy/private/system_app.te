@@ -3,3 +3,10 @@
 # paused (the battery status keeps saying "Charging" while bypassing).
 allow system_app sysfs_battery:dir search;
 allow system_app sysfs_battery_writable:file rw_file_perms;
+
+# Settings > System > Performance: ExynosParts chooses the profile and clears the overclock
+# guard once a start on it went fine; the page shows the live CPU and GPU clocks.
+set_prop(system_app, exynos_perf_prop)
+r_dir_file(system_app, sysfs_devices_system_cpu)
+allow system_app sysfs_gpu:dir search;
+allow system_app sysfs_gpu:file r_file_perms;

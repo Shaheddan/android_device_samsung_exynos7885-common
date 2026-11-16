@@ -1,0 +1,3 @@
+# Performance profiles (Settings > System > Performance): ExynosParts (system_app) sets the
+# profile, vendor init applies it at boot and keeps the overclock guard in it.
+system_public_prop(exynos_perf_prop)
