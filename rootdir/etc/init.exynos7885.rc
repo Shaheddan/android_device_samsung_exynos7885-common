@@ -722,9 +722,11 @@ service watchdogd /system/bin/watchdogd 10 20
     seclabel u:r:watchdogd:s0
 
 # Performance profiles (Settings > System > Performance)
-# The profile chosen in Settings is read once per boot, as soon as the persistent
-# properties are loaded, so choosing another one only takes effect after a restart.
-on property:ro.persistent_properties.ready=true
+# The profile chosen in Settings is read once per boot, so choosing another one only
+# takes effect after a restart. Vendor init cannot trigger on
+# ro.persistent_properties.ready (init rejects the whole action), but init.rc loads the
+# persistent properties in its own post-fs-data action, which runs before this one.
+on post-fs-data
     setprop exynos.perf.request ${persist.exynos.perf.profile:-smooth}
 
 on property:exynos.perf.request=stock
