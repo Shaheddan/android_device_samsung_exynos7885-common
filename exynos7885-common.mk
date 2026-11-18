@@ -173,6 +173,11 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/media/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
     $(LOCAL_PATH)/configs/media/media_profiles_V1_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml
 
+# The 7885 has one m2m1shot scaler, /dev/m2m1shot_scaler0 (CSC_HW_SC0 = 4). libcsc defaults
+# to CSC_HW_SC1, a node this SoC doesn't have, so the encoders' colour conversion (screen
+# recording) could never open the hardware.
+$(call soong_config_set,libcsc,DEFAULT_CSC_HW,4)
+
 # Memtrack
 PRODUCT_PACKAGES += \
     android.hardware.memtrack-service.samsung-mali
