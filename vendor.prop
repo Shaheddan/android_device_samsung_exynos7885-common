@@ -1,5 +1,7 @@
 ## FRP
-ro.frp.pst=/dev/block/platform/13500000.dwmmc0/by-name/persistent
+# No ro.frp.pst on purpose: LineageOS has no Google setup wizard, so nothing could ever
+# clear factory reset protection, and a Google account left over from another ROM would
+# block every app install after a clean flash.
 
 ## OMX
 # Set csc support in OMX
