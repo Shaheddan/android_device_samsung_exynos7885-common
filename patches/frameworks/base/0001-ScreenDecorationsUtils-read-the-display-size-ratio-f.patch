@@ -1,0 +1,36 @@
+From 7e08ac2191f041ed54b3bb7feb6d25cea2ebfbb6 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Wed, 18 Nov 2026 16:04:17 +0330
+Subject: [PATCH] ScreenDecorationsUtils: read the display size ratio from any
+ context
+
+getWindowCornerRadius() takes the display with getDisplayNoVerify()
+because it is called with non-UI contexts, but the scaling helper it
+calls, getPhysicalPixelDisplaySizeRatio(), then used getDisplay(), which
+throws for those.
+
+Launcher3's RotationTouchHelper asks for the corner radius with its
+application context while it sets up the gesture regions, so with
+rounded window corners the launcher crashed as it started:
+"Tried to obtain display from a Context not associated with one".
+---
+ .../com/android/internal/policy/ScreenDecorationsUtils.java    | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/core/java/com/android/internal/policy/ScreenDecorationsUtils.java b/core/java/com/android/internal/policy/ScreenDecorationsUtils.java
+index b23515aa..19ac5012 100644
+--- a/core/java/com/android/internal/policy/ScreenDecorationsUtils.java
++++ b/core/java/com/android/internal/policy/ScreenDecorationsUtils.java
+@@ -82,7 +82,8 @@ public class ScreenDecorationsUtils {
+ 
+     static float getPhysicalPixelDisplaySizeRatio(Context context) {
+         DisplayInfo displayInfo = new DisplayInfo();
+-        context.getDisplay().getDisplayInfo(displayInfo);
++        // Same as getWindowCornerRadius(): callers may pass a non-UI context.
++        context.getDisplayNoVerify().getDisplayInfo(displayInfo);
+         final Display.Mode maxDisplayMode =
+                 DisplayUtils.getMaximumResolutionDisplayMode(displayInfo.supportedModes);
+         if (maxDisplayMode == null) {
+-- 
+2.43.0
+
