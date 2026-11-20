@@ -1,0 +1,33 @@
+From 132ebd37abca97df702039efbdb685f1c41e4b56 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Sat, 21 Nov 2026 01:52:00 +0330
+Subject: [PATCH] bp1a: let SystemUI draw the navigation bar on phones again
+
+Since QPR2 SystemUI hands the phone navigation bar to whichever launcher
+provides recents (TaskbarDelegate) and expects that launcher to draw it.
+Trebuchet does, anything else doesn't, so with a ported One UI Home as
+the recents provider the 3-button bar was just gone.
+
+Turn enable_taskbar_navbar_unification off so SystemUI draws its own bar
+for every launcher again, like before QPR2. Launcher3 checks the same
+flag, so Trebuchet stops drawing its copy and there is no double bar.
+Large screens still get the taskbar.
+---
+ .../enable_taskbar_navbar_unification_flag_values.textproto     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/aconfig/bp1a/com.android.wm.shell/enable_taskbar_navbar_unification_flag_values.textproto b/aconfig/bp1a/com.android.wm.shell/enable_taskbar_navbar_unification_flag_values.textproto
+index 7486856..3371a08 100644
+--- a/aconfig/bp1a/com.android.wm.shell/enable_taskbar_navbar_unification_flag_values.textproto
++++ b/aconfig/bp1a/com.android.wm.shell/enable_taskbar_navbar_unification_flag_values.textproto
+@@ -1,6 +1,6 @@
+ flag_value {
+   package: "com.android.wm.shell"
+   name: "enable_taskbar_navbar_unification"
+-  state: ENABLED
++  state: DISABLED
+   permission: READ_ONLY
+ }
+-- 
+2.43.0
+
