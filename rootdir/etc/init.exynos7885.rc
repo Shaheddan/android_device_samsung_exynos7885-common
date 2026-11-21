@@ -701,7 +701,8 @@ on fs
 
 on property:sys.boot_completed=1
     chown root root /sys/class/sec/tsp/cmd
-    swapon_all /vendor/etc/fstab.enableswap
+    # Swap: see "Memory" below
+    setprop exynos.ram.zram ${persist.exynos.ram.zram:-0}
     setprop vendor.powerhal.init 1
 
 # Permission for flashlight control for HAL3.3
@@ -764,6 +765,31 @@ on property:exynos.perf.request=oc2-trial
     setprop persist.exynos.perf.profile max
     setprop exynos.perf.fallback oc2
     setprop exynos.perf.active max
+
+# Memory (Settings > System > Performance > Memory)
+# Compressed RAM (zram) size in percent of RAM and swap to storage (zram writeback file
+# in /data/per_boot, made by swapon_all) in MB, chosen in ExynosParts and read once per
+# boot, after /data is up. "0" means nothing chosen yet: this phone's default. What is
+# used ends up in exynos.ram.zram and exynos.ram.wb for the page to show. Android's
+# ZramWriteback job (config_zramWriteback) then moves idle pages to the file once a day.
+on property:exynos.ram.zram=0
+    setprop exynos.ram.zram ${ro.vendor.exynos.ram.zram_default:-50}
+
+on property:exynos.ram.zram=25
+    setprop exynos.ram.wb ${persist.exynos.ram.wb:-0}
+    swapon_all /vendor/etc/fstab.zram25_wb${persist.exynos.ram.wb:-0}
+
+on property:exynos.ram.zram=50
+    setprop exynos.ram.wb ${persist.exynos.ram.wb:-0}
+    swapon_all /vendor/etc/fstab.zram50_wb${persist.exynos.ram.wb:-0}
+
+on property:exynos.ram.zram=75
+    setprop exynos.ram.wb ${persist.exynos.ram.wb:-0}
+    swapon_all /vendor/etc/fstab.zram75_wb${persist.exynos.ram.wb:-0}
+
+on property:exynos.ram.zram=100
+    setprop exynos.ram.wb ${persist.exynos.ram.wb:-0}
+    swapon_all /vendor/etc/fstab.zram100_wb${persist.exynos.ram.wb:-0}
 
 # The power HAL reads its config only when it starts (at late-fs, before /data is up),
 # so restart it with the profile's file. It applies nothing until boot has completed:
