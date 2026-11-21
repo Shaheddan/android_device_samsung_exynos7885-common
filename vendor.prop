@@ -58,6 +58,18 @@ bluetooth.profile.sap.server.enabled=true
 ## Dalvik
 dalvik.vm.dex2oat64.enabled=true
 
+## Memory
+# lmkd runs on PSI (the kernel has no staging lowmemorykiller any more). It should not
+# close cached apps only because free memory touched the high watermark: on this 4.4
+# kernel that happens during normal kswapd reclaim with plenty of page cache left. It
+# still kills on memory stalls, thrashing and low swap. On a 4 GB A30, with this and 64
+# cached processes, 22 of 23 apps came back warm on a second round instead of 2.
+# Phones may set their own value (the A10 keeps it for its oldest apps).
+ro.lmk.lowmem_min_oom_score?=1001
+# Compressed RAM (zram) size in percent of RAM until one is picked in Settings > System >
+# Performance > Memory. Phones with less RAM set more.
+ro.vendor.exynos.ram.zram_default?=50
+
 ## Power HAL
 vendor.powerhal.disp.idle_support=false
 # Touch boost length: 650 ms after a touch (the HAL adds 650 ms to the touch's own
