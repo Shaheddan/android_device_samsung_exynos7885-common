@@ -50,6 +50,15 @@ final class PerfWidgets {
     static final String ICON_CLOSE = "M6 6l12 12M18 6L6 18";
     static final String ICON_HEAT = "M14 14.76V4a2 2 0 0 0-4 0v10.76a4 4 0 1 0 4 0z";
     static final String ICON_APP = "M3.8 16.5a8.5 8.5 0 1 1 16.4 0M12.8 7.5l-2.6 4.6h3.6l-2.6 4.6";
+    /** Memory section: a RAM chip, stacked apps, squeeze (zram), a drive, a sparkle. */
+    static final String ICON_RAM = "M6 6h12v12H6zM9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3"
+            + "M3 9h3M3 15h3M18 9h3M18 15h3M10 10h4v4h-4z";
+    static final String ICON_APPS = "M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5";
+    static final String ICON_ZRAM = "M12 2v6M9 5l3 3 3-3M12 22v-6M9 19l3-3 3 3M4 12h16";
+    static final String ICON_STORAGE = "M5 4h10l4 4v12H5zM8.5 8v3M11.5 8v3M14.5 8v3M8 16h8";
+    static final String ICON_OFF = "M5 12h14";
+    static final String ICON_SPARKLE = "M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"
+            + "M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z";
 
     private PerfWidgets() {}
 
@@ -594,6 +603,101 @@ final class PerfWidgets {
             mPaint.setColor(mFill);
             mRect.set(0, 0, Math.max(h, w * Math.min(1f, mFrac)), h);
             canvas.drawRoundRect(mRect, h / 2f, h / 2f, mPaint);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------
+
+    /**
+     * RAM in use as an M3 Expressive wavy ring: a plain track and, over it, a wavy arc for
+     * the used part. The arc glides to each new reading and its wave drifts slowly while
+     * the ring is on screen (a still wave when "Remove animations" is on).
+     */
+    static final class RamRing extends View {
+        private static final int WAVES = 12;
+        private final Paint mTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path mPath = new Path();
+        private final ValueAnimator mLoop;
+        private float mFrac;
+        private ValueAnimator mAnim;
+
+        RamRing(Context c) {
+            super(c);
+            for (Paint p : new Paint[] {mTrackPaint, mFillPaint}) {
+                p.setStyle(Paint.Style.STROKE);
+                p.setStrokeCap(Paint.Cap.ROUND);
+                p.setStrokeJoin(Paint.Join.ROUND);
+            }
+            mLoop = loop(this, 7000);
+        }
+
+        void setColors(int track, int fill) {
+            mTrackPaint.setColor(track);
+            mFillPaint.setColor(fill);
+            invalidate();
+        }
+
+        void setFraction(float frac) {
+            frac = Math.max(0.02f, Math.min(1f, frac));
+            if (mAnim != null) mAnim.cancel();
+            if (!motionOn() || !isAttachedToWindow()) {
+                mFrac = frac;
+                invalidate();
+                return;
+            }
+            mAnim = ValueAnimator.ofFloat(mFrac, frac);
+            mAnim.setDuration(900);
+            mAnim.setInterpolator(SPRING_SOFT);
+            mAnim.addUpdateListener(a -> {
+                mFrac = (float) a.getAnimatedValue();
+                invalidate();
+            });
+            mAnim.start();
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (motionOn()) mLoop.start();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            mLoop.cancel();
+            super.onDetachedFromWindow();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            final float w = getWidth(), cx = w / 2f, cy = getHeight() / 2f;
+            final float stroke = w * 0.075f;
+            final float r = Math.min(w, getHeight()) / 2f - stroke * 1.4f;
+            final float amp = stroke * 0.32f;
+            final float phase = mLoop.isStarted() ? (float) (2 * Math.PI * (float) mLoop.getAnimatedValue()) : 0f;
+            mTrackPaint.setStrokeWidth(stroke);
+            mFillPaint.setStrokeWidth(stroke);
+
+            // Track: the rest of the circle, with a small gap at both ends of the wave.
+            final float sweep = 360f * Math.min(1f, Math.max(0f, mFrac));
+            final float gap = sweep >= 359f ? 0f : (float) Math.toDegrees(stroke * 1.6f / r);
+            if (sweep + 2 * gap < 360f) {
+                final float start = -90f + sweep + gap;
+                canvas.drawArc(cx - r, cy - r, cx + r, cy + r, start, 360f - sweep - 2 * gap,
+                        false, mTrackPaint);
+            }
+
+            // Used part: a wave along the circle, clockwise from the top.
+            mPath.rewind();
+            final int steps = Math.max(2, Math.round(sweep / 2f));
+            for (int i = 0; i <= steps; i++) {
+                final double t = Math.toRadians(-90f + sweep * i / steps);
+                final double rr = r + amp * Math.sin(WAVES * (t + Math.PI / 2) + phase);
+                final float x = (float) (cx + rr * Math.cos(t));
+                final float y = (float) (cy + rr * Math.sin(t));
+                if (i == 0) mPath.moveTo(x, y); else mPath.lineTo(x, y);
+            }
+            canvas.drawPath(mPath, mFillPaint);
         }
     }
 
