@@ -110,6 +110,14 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/rootdir/etc/fstab.exynos7885:$(TARGET_COPY_OUT_RAMDISK)/vendor/etc/fstab.$(TARGET_SOC)
 
+# Swap: one fstab per compressed RAM size (percent) and swap-to-storage size (MB), picked
+# at boot by init.exynos7885.rc from Settings > System > Performance > Memory.
+EXYNOS_ZRAM_SIZES := 25 50 75 100
+EXYNOS_ZRAM_WRITEBACK := 0 512 1024 2048
+PRODUCT_COPY_FILES += \
+    $(foreach z,$(EXYNOS_ZRAM_SIZES),$(foreach w,$(EXYNOS_ZRAM_WRITEBACK), \
+        $(LOCAL_PATH)/rootdir/etc/zram/fstab.zram$(z)_wb$(w):$(TARGET_COPY_OUT_VENDOR)/etc/fstab.zram$(z)_wb$(w)))
+
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/rootdir/etc/init.exynos7885.usb.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.usb.rc \
     $(LOCAL_PATH)/rootdir/etc/init.recovery.exynos7885.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.$(TARGET_SOC).rc

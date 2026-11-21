@@ -3,3 +3,9 @@ persist.exynos.perf.profile     u:object_r:exynos_perf_prop:s0 exact string
 exynos.perf.request             u:object_r:exynos_perf_prop:s0 exact string
 exynos.perf.active              u:object_r:exynos_perf_prop:s0 exact string
 exynos.perf.fallback            u:object_r:exynos_perf_prop:s0 exact string
+# Memory (Settings > System > Performance > Memory): chosen by ExynosParts, used by
+# vendor init at boot
+persist.exynos.ram.zram         u:object_r:exynos_perf_prop:s0 exact string
+persist.exynos.ram.wb           u:object_r:exynos_perf_prop:s0 exact string
+exynos.ram.zram                 u:object_r:exynos_perf_prop:s0 exact string
+exynos.ram.wb                   u:object_r:exynos_perf_prop:s0 exact string
