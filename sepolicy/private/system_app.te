@@ -10,3 +10,6 @@ set_prop(system_app, exynos_perf_prop)
 r_dir_file(system_app, sysfs_devices_system_cpu)
 allow system_app sysfs_gpu:dir search;
 allow system_app sysfs_gpu:file r_file_perms;
+
+# Performance > Memory shows how much zram holds and what went to storage (mm_stat, bd_stat).
+r_dir_file(system_app, sysfs_zram)

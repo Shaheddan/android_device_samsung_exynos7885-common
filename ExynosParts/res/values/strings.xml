@@ -149,4 +149,51 @@
     <string name="perf_fallback_title">%1$s was turned off</string>
     <string name="perf_fallback_body">Your phone restarted by itself soon after it started with %1$s, so Performance switched back to Max.</string>
     <string name="perf_ok">OK</string>
+
+    <!-- Performance > Memory -->
+    <string name="ram_header">Memory</string>
+    <string name="ram_available_label">Available now</string>
+    <string name="ram_gb">%1$s GB</string>
+    <string name="ram_of_total">of %1$s GB · %2$s GB in use</string>
+    <string name="ram_percent">%1$d%%</string>
+    <string name="ram_used">in use</string>
+    <string name="ram_ring_desc">%1$d%% of RAM in use</string>
+    <string name="ram_zram_line">Compressed: %1$s kept in %2$s</string>
+    <string name="ram_zram_none">Compressed: nothing yet</string>
+    <string name="ram_wb_line">On storage: %1$s</string>
+    <string name="ram_mb">%1$d MB</string>
+    <string name="ram_free_up">Free up RAM</string>
+    <string name="ram_freeing">Closing background apps…</string>
+    <string name="ram_freed">Closed %1$d apps and freed %2$s</string>
+    <string name="ram_nothing_to_free">No apps were waiting in the background</string>
+
+    <string name="ram_apps_header">Background apps</string>
+    <string name="ram_apps_caption">How many apps stay open in the background, ready to come back where you left them. Applies right away.</string>
+    <string name="ram_apps_fewer">Fewer</string>
+    <string name="ram_apps_fewer_desc">Up to %1$d apps. They restart more often but run less in the background.</string>
+    <string name="ram_apps_balanced">Balanced</string>
+    <string name="ram_apps_balanced_desc">Up to %1$d apps, tuned for this phone\'s RAM.</string>
+    <string name="ram_apps_more">More</string>
+    <string name="ram_apps_more_desc">Up to %1$d apps. More of them come back where you left them.</string>
+
+    <string name="ram_zram_header">Compressed RAM (zram)</string>
+    <string name="ram_zram_caption">Apps you are not using get squeezed to about a third of their size and stay in RAM, so more of them stay open. Starts after a restart.</string>
+    <string name="ram_zram_title">%1$d%% · %2$s GB</string>
+    <string name="ram_zram_desc_25">Least work for the processor, fewer apps kept</string>
+    <string name="ram_zram_desc_50">A good balance</string>
+    <string name="ram_zram_desc_75">More apps stay open</string>
+    <string name="ram_zram_desc_100">The most apps, for a little more processor work</string>
+
+    <string name="ram_wb_header">Swap to storage</string>
+    <string name="ram_wb_caption">Once a day, while the phone is idle, apps you have not touched for hours move from compressed RAM to a file on storage. Opening them again takes a moment longer. It uses free storage and wears it a little, so it is off unless you turn it on. Starts after a restart.</string>
+    <string name="ram_wb_off">Off</string>
+    <string name="ram_wb_off_desc">Everything stays in RAM</string>
+    <string name="ram_wb_512">512 MB</string>
+    <string name="ram_wb_1024">1 GB</string>
+    <string name="ram_wb_2048">2 GB</string>
+    <string name="ram_wb_desc">Uses %1$s of free storage</string>
+
+    <string name="ram_bar_title">New memory settings</string>
+    <string name="ram_sheet_title">Restart to use the new memory settings?</string>
+    <string name="ram_sheet_body">Compressed RAM %1$s, swap to storage %2$s. Your phone restarts now, so save anything you are working on first.</string>
 </resources>

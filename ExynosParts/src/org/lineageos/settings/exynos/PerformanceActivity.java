@@ -53,7 +53,9 @@ import java.util.Locale;
  * Settings > System > Performance, also opened from its own app drawer icon.
  *
  * Shows the active profile on a speed dial with the live clocks, lists the profiles (the
- * overclock ones apart, under a warning) and restarts the phone to switch. Built from
+ * overclock ones apart, under a warning) and restarts the phone to switch. The Memory part
+ * shows the RAM in use with a "Free up RAM" button and sets how many apps stay in the
+ * background, the compressed RAM (zram) size and swap to storage. Built from
  * plain views and the drawn parts in PerfWidgets: no extra libraries, colours from the
  * wallpaper (Material You), and every animation follows "Remove animations".
  */
@@ -83,6 +85,18 @@ public class PerformanceActivity extends Activity {
     private final TextView[] mLiveCap = new TextView[3];
     private final PerfWidgets.Bar[] mLiveBar = new PerfWidgets.Bar[3];
     private Switch mDrawerSwitch;
+
+    // Memory
+    private int mZramActive, mZramSel, mWbActive, mWbSel;
+    private String mApps;
+    private int[] mAppsLimits;
+    private final List<OptionRow> mAppsRows = new ArrayList<>();
+    private final List<OptionRow> mZramRows = new ArrayList<>();
+    private final List<OptionRow> mWbRows = new ArrayList<>();
+    private PerfWidgets.RamRing mRamRing;
+    private TextView mRamPercent, mRamAvail, mRamSub, mZramLine, mWbLine, mFreeResult;
+    private TextView mFreeButton;
+    private boolean mFreeing;
 
     private LinearLayout mBar;
     private PerfWidgets.LeadIcon mBarIcon;
@@ -168,6 +182,12 @@ public class PerformanceActivity extends Activity {
         mActive = PerfProfiles.active();
         mSelected = PerfProfiles.chosen();
         mFallback = PerfProfiles.fallback();
+        mZramActive = PerfProfiles.Memory.zramActive();
+        mZramSel = PerfProfiles.Memory.zramChosen();
+        mWbActive = PerfProfiles.Memory.wbActive();
+        mWbSel = PerfProfiles.Memory.wbChosen();
+        mAppsLimits = PerfProfiles.Memory.appsLimits(this);
+        mApps = PerfProfiles.Memory.apps(this);
 
         getWindow().setBackgroundDrawable(new ColorDrawable(mC.bg));
         buildPage();
@@ -188,6 +208,7 @@ public class PerformanceActivity extends Activity {
     protected void onResume() {
         super.onResume();
         mActive = PerfProfiles.active();
+        mApps = PerfProfiles.Memory.apps(this);
         // Only when it changed: setChecked() runs the listener, which writes the state.
         final boolean shown = isDrawerShown();
         if (mDrawerSwitch.isChecked() != shown) mDrawerSwitch.setChecked(shown);
@@ -302,6 +323,8 @@ public class PerformanceActivity extends Activity {
         mContent.addView(header(R.string.perf_header_beyond, mC.error));
         mContent.addView(warningCard());
         mContent.addView(oc);
+
+        buildMemory();
 
         mContent.addView(header(R.string.perf_header_shortcut, mC.primary));
         mContent.addView(drawerRow());
@@ -561,7 +584,7 @@ public class PerformanceActivity extends Activity {
         keep.setBackground(ripple(shape(Color.TRANSPARENT, dp(22)), dp(22)));
         keep.setContentDescription(getString(R.string.perf_bar_keep));
         keep.setTag("keep");
-        keep.setOnClickListener(v -> select(mActive));
+        keep.setOnClickListener(v -> keepCurrent());
         mBar.addView(keep);
         mBarRestart = pillButton(R.string.perf_restart, true);
         mBarRestart.setOnClickListener(v -> showSheet(true));
@@ -844,6 +867,387 @@ public class PerformanceActivity extends Activity {
         return getString(R.string.perf_meta_touch, ghz(p.touch[1]), gpu(p.touch[2]));
     }
 
+    // ---- memory ----------------------------------------------------------------------
+
+    private void buildMemory() {
+        mContent.addView(header(R.string.ram_header, mC.primary));
+        mContent.addView(ramCard());
+
+        mContent.addView(header(R.string.ram_apps_header, mC.primary));
+        mContent.addView(caption(R.string.ram_apps_caption));
+        final LinearLayout apps = group();
+        final int[] titles = {R.string.ram_apps_fewer, R.string.ram_apps_balanced, R.string.ram_apps_more};
+        final int[] descs = {R.string.ram_apps_fewer_desc, R.string.ram_apps_balanced_desc,
+                R.string.ram_apps_more_desc};
+        final String[] levels = PerfProfiles.Memory.APPS;
+        for (int i = 0; i < levels.length; i++) {
+            final String level = levels[i];
+            final OptionRow row = new OptionRow(PerfWidgets.ICON_APPS, getString(titles[i]),
+                    // ActivityManager keeps half of the limit as apps, half as empty processes.
+                    getString(descs[i], mAppsLimits[i] / 2), 1 + i * 2, i, levels.length,
+                    () -> chooseApps(level));
+            row.key = level;
+            mAppsRows.add(row);
+            apps.addView(row.view, lpMargins(MATCH, WRAP, 0, 0, 0, 2));
+        }
+        mContent.addView(apps);
+
+        mContent.addView(header(R.string.ram_zram_header, mC.primary));
+        mContent.addView(caption(R.string.ram_zram_caption));
+        final LinearLayout zram = group();
+        final int[] zdesc = {R.string.ram_zram_desc_25, R.string.ram_zram_desc_50,
+                R.string.ram_zram_desc_75, R.string.ram_zram_desc_100};
+        final int[] sizes = PerfProfiles.Memory.ZRAM;
+        for (int i = 0; i < sizes.length; i++) {
+            final int pct = sizes[i];
+            final OptionRow row = new OptionRow(PerfWidgets.ICON_ZRAM, zramLabel(pct),
+                    getString(zdesc[i]), i + 1, i, sizes.length, () -> {
+                        mZramSel = pct;
+                        refresh(true);
+                    });
+            row.value = pct;
+            mZramRows.add(row);
+            zram.addView(row.view, lpMargins(MATCH, WRAP, 0, 0, 0, 2));
+        }
+        mContent.addView(zram);
+
+        mContent.addView(header(R.string.ram_wb_header, mC.primary));
+        mContent.addView(caption(R.string.ram_wb_caption));
+        final LinearLayout wb = group();
+        final int[] wbs = PerfProfiles.Memory.WB;
+        for (int i = 0; i < wbs.length; i++) {
+            final int mb = wbs[i];
+            final OptionRow row = new OptionRow(mb == 0 ? PerfWidgets.ICON_OFF : PerfWidgets.ICON_STORAGE,
+                    wbLabel(mb), mb == 0 ? getString(R.string.ram_wb_off_desc)
+                            : getString(R.string.ram_wb_desc, wbLabel(mb)),
+                    i + 1, i, wbs.length, () -> {
+                        mWbSel = mb;
+                        refresh(true);
+                    });
+            row.value = mb;
+            mWbRows.add(row);
+            wb.addView(row.view, lpMargins(MATCH, WRAP, 0, 0, 0, 2));
+        }
+        mContent.addView(wb);
+    }
+
+    private TextView caption(int res) {
+        final TextView t = text(14, mC.onSurfaceVariant, 400, 100f);
+        t.setText(res);
+        t.setLineSpacing(dp(2), 1f);
+        t.setPadding(dp(32), 0, dp(32), dp(12));
+        return t;
+    }
+
+    /** The live RAM card: wavy ring, what is free, zram, and "Free up RAM". */
+    private View ramCard() {
+        final LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(shape(mC.secondaryContainer, dp(32)));
+        card.setPadding(dp(20), dp(20), dp(20), dp(18));
+
+        final LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        final FrameLayout ringBox = new FrameLayout(this);
+        mRamRing = new PerfWidgets.RamRing(this);
+        mRamRing.setColors(PerfWidgets.withAlpha(mC.onSecondaryContainer, 0.16f), mC.primary);
+        ringBox.addView(mRamRing, new FrameLayout.LayoutParams(MATCH, MATCH));
+        final LinearLayout center = new LinearLayout(this);
+        center.setOrientation(LinearLayout.VERTICAL);
+        center.setGravity(Gravity.CENTER);
+        mRamPercent = text(26, mC.onSecondaryContainer, 600, 112f);
+        mRamPercent.setFontFeatureSettings("tnum");
+        mRamPercent.setGravity(Gravity.CENTER);
+        final TextView used = text(12, mC.onSecondaryContainer, 500, 100f);
+        used.setText(R.string.ram_used);
+        used.setGravity(Gravity.CENTER);
+        center.addView(mRamPercent);
+        center.addView(used);
+        ringBox.addView(center, new FrameLayout.LayoutParams(MATCH, MATCH, Gravity.CENTER));
+        top.addView(ringBox, lp(dp(124), dp(124)));
+
+        final LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.setPadding(dp(18), 0, 0, 0);
+        final TextView label = text(13, PerfWidgets.withAlpha(mC.onSecondaryContainer, 0.85f), 600, 100f);
+        label.setText(R.string.ram_available_label);
+        label.setLetterSpacing(0.03f);
+        mRamAvail = text(32, mC.onSecondaryContainer, 600, 112f);
+        mRamAvail.setFontFeatureSettings("tnum");
+        mRamSub = text(13.5f, mC.onSecondaryContainer, 400, 100f);
+        mRamSub.setFontFeatureSettings("tnum");
+        mZramLine = text(13, PerfWidgets.withAlpha(mC.onSecondaryContainer, 0.85f), 400, 100f);
+        mZramLine.setFontFeatureSettings("tnum");
+        mWbLine = text(13, PerfWidgets.withAlpha(mC.onSecondaryContainer, 0.85f), 400, 100f);
+        mWbLine.setFontFeatureSettings("tnum");
+        texts.addView(label);
+        texts.addView(mRamAvail, lpMargins(WRAP, WRAP, 0, 2, 0, 2));
+        texts.addView(mRamSub);
+        texts.addView(mZramLine, lpMargins(WRAP, WRAP, 0, 8, 0, 0));
+        texts.addView(mWbLine, lpMargins(WRAP, WRAP, 0, 2, 0, 0));
+        top.addView(texts, new LinearLayout.LayoutParams(0, WRAP, 1f));
+        card.addView(top);
+
+        mFreeButton = text(15, mC.onPrimary, 600, 100f);
+        mFreeButton.setText(R.string.ram_free_up);
+        mFreeButton.setGravity(Gravity.CENTER);
+        final PerfWidgets.IconDrawable spark = new PerfWidgets.IconDrawable(PerfWidgets.ICON_SPARKLE,
+                mC.onPrimary, 2.2f);
+        spark.setBounds(0, 0, dp(20), dp(20));
+        mFreeButton.setCompoundDrawables(spark, null, null, null);
+        mFreeButton.setCompoundDrawablePadding(dp(8));
+        mFreeButton.setPadding(dp(20), 0, dp(24), 0);
+        mFreeButton.setBackground(ripple(shape(mC.primary, dp(26)), dp(26)));
+        mFreeButton.setOnClickListener(v -> freeUp());
+        mFreeButton.setOnTouchListener((v, e) -> {
+            final int a = e.getAction();
+            if (a == android.view.MotionEvent.ACTION_DOWN || a == android.view.MotionEvent.ACTION_UP
+                    || a == android.view.MotionEvent.ACTION_CANCEL) {
+                final float sc = a == android.view.MotionEvent.ACTION_DOWN ? 0.95f : 1f;
+                v.animate().scaleX(sc).scaleY(sc).setDuration(180).setInterpolator(PerfWidgets.SPRING).start();
+            }
+            return false;
+        });
+        final LinearLayout.LayoutParams bp = lpMargins(WRAP, dp(52), 0, 18, 0, 0);
+        bp.gravity = Gravity.CENTER_HORIZONTAL;
+        card.addView(mFreeButton, bp);
+
+        mFreeResult = text(13.5f, mC.onSecondaryContainer, 500, 100f);
+        mFreeResult.setGravity(Gravity.CENTER);
+        mFreeResult.setVisibility(View.GONE);
+        card.addView(mFreeResult, lpMargins(MATCH, WRAP, 0, 10, 0, 0));
+
+        card.setLayoutParams(lpMargins(MATCH, WRAP, 16, 0, 16, 0));
+        return card;
+    }
+
+    private String gb(long kb) {
+        return String.format(Locale.getDefault(), "%.1f", kb / 1048576f);
+    }
+
+    private String mbOrGb(long bytes) {
+        final long mb = bytes / 1048576L;
+        return mb >= 1024 ? getString(R.string.ram_gb, gb(bytes / 1024L))
+                : getString(R.string.ram_mb, (int) mb);
+    }
+
+    private String zramLabel(int pct) {
+        final long total = PerfProfiles.Memory.meminfo()[0];
+        return getString(R.string.ram_zram_title, pct, gb(total * pct / 100L));
+    }
+
+    private String wbLabel(int mb) {
+        switch (mb) {
+            case 512: return getString(R.string.ram_wb_512);
+            case 1024: return getString(R.string.ram_wb_1024);
+            case 2048: return getString(R.string.ram_wb_2048);
+            default: return getString(R.string.ram_wb_off);
+        }
+    }
+
+    private void updateRam() {
+        final long[] m = PerfProfiles.Memory.meminfo();
+        if (m[0] <= 0) return;
+        final long usedKb = Math.max(0, m[0] - m[1]);
+        final int pct = Math.round(usedKb * 100f / m[0]);
+        mRamRing.setFraction(usedKb / (float) m[0]);
+        mRamRing.setContentDescription(getString(R.string.ram_ring_desc, pct));
+        mRamPercent.setText(getString(R.string.ram_percent, pct));
+        mRamAvail.setText(getString(R.string.ram_gb, gb(m[1])));
+        mRamSub.setText(getString(R.string.ram_of_total, gb(m[0]), gb(usedKb)));
+        // mm_stat: orig_data_size compr_data_size mem_used_total ...
+        final long[] z = PerfProfiles.Memory.zramFile("mm_stat");
+        if (z != null && z.length > 2 && z[0] > 0) {
+            mZramLine.setText(getString(R.string.ram_zram_line, mbOrGb(z[0]), mbOrGb(z[2])));
+        } else {
+            mZramLine.setText(R.string.ram_zram_none);
+        }
+        // bd_stat: pages on the storage file, pages read back, pages written
+        final long[] b = mWbActive > 0 ? PerfProfiles.Memory.zramFile("bd_stat") : null;
+        if (b != null && b.length > 0) {
+            mWbLine.setVisibility(View.VISIBLE);
+            mWbLine.setText(getString(R.string.ram_wb_line, mbOrGb(b[0] * 4096L)));
+        } else {
+            mWbLine.setVisibility(View.GONE);
+        }
+    }
+
+    private void freeUp() {
+        if (mFreeing) return;
+        mFreeing = true;
+        final long before = PerfProfiles.Memory.meminfo()[1];
+        mFreeButton.setText(R.string.ram_freeing);
+        mFreeButton.setEnabled(false);
+        mFreeButton.animate().alpha(0.7f).setDuration(PerfWidgets.motionOn() ? 200 : 0).start();
+        final Context app = getApplicationContext();
+        new Thread(() -> {
+            int closed = 0;
+            try {
+                closed = PerfProfiles.Memory.freeUp(app);
+                // Give the killed apps a moment to go, so the RAM shows up as free.
+                Thread.sleep(1500);
+            } catch (Exception e) {
+                Log.e(TAG, "free up RAM failed", e);
+            }
+            final int n = closed;
+            final long freedKb = Math.max(0, PerfProfiles.Memory.meminfo()[1] - before);
+            mHandler.post(() -> {
+                if (isDestroyed()) return;
+                mFreeing = false;
+                mFreeButton.setText(R.string.ram_free_up);
+                mFreeButton.setEnabled(true);
+                mFreeButton.animate().alpha(1f).setDuration(PerfWidgets.motionOn() ? 200 : 0).start();
+                mFreeResult.setText(n == 0 ? getString(R.string.ram_nothing_to_free)
+                        : getString(R.string.ram_freed, n, mbOrGb(freedKb * 1024L)));
+                mFreeResult.setVisibility(View.VISIBLE);
+                if (PerfWidgets.motionOn()) {
+                    mFreeResult.setAlpha(0f);
+                    mFreeResult.setTranslationY(dp(8));
+                    mFreeResult.animate().alpha(1f).translationY(0).setDuration(450)
+                            .setInterpolator(PerfWidgets.SPRING).start();
+                }
+                updateRam();
+            });
+        }, "ExynosFreeRam").start();
+    }
+
+    private void chooseApps(String level) {
+        if (level.equals(mApps)) return;
+        try {
+            PerfProfiles.Memory.chooseApps(this, level);
+            mApps = level;
+        } catch (RuntimeException e) {
+            Log.e(TAG, "could not set background apps", e);
+            Toast.makeText(this, R.string.perf_restart_failed, Toast.LENGTH_SHORT).show();
+        }
+        refresh(true);
+    }
+
+    private void refreshMemory(boolean animated) {
+        final int zramDefault = PerfProfiles.Memory.zramDefault();
+        for (OptionRow r : mAppsRows) {
+            r.update(r.key.equals(mApps), PerfProfiles.Memory.BALANCED.equals(r.key), false, animated);
+        }
+        for (OptionRow r : mZramRows) {
+            r.update(r.value == mZramSel, r.value == zramDefault, r.value == mZramActive, animated);
+        }
+        for (OptionRow r : mWbRows) {
+            r.update(r.value == mWbSel, r.value == 0, r.value == mWbActive, animated);
+        }
+    }
+
+    /** One choice of the Memory part: like a profile row, without the profile details. */
+    private final class OptionRow {
+        final LinearLayout view;
+        final GradientDrawable bg = new GradientDrawable();
+        final GradientDrawable mask = new GradientDrawable();
+        final PerfWidgets.LeadIcon lead;
+        final TextView title, desc, badgeDefault, badgeActive;
+        final PerfWidgets.Pills pills;
+        final PerfWidgets.Radio radio;
+        final float outerTop, outerBottom;
+        final int level;
+        String key = "";
+        int value;
+        float corner = -1;
+        ValueAnimator cornerAnim;
+        Boolean selected;
+
+        OptionRow(String icon, String titleText, String descText, int level, int index, int count,
+                Runnable onClick) {
+            this.level = level;
+            final float big = dp(28), small = dp(8);
+            outerTop = index == 0 ? big : small;
+            outerBottom = index == count - 1 ? big : small;
+            view = new LinearLayout(PerformanceActivity.this);
+            view.setGravity(Gravity.CENTER_VERTICAL);
+            view.setPadding(dp(16), dp(14), dp(18), dp(14));
+            mask.setColor(Color.WHITE);
+            view.setBackground(new RippleDrawable(ColorStateList.valueOf(
+                    PerfWidgets.withAlpha(mC.onSurface, 0.12f)), bg, mask));
+            view.setOnClickListener(v -> onClick.run());
+            view.setFocusable(true);
+
+            lead = new PerfWidgets.LeadIcon(PerformanceActivity.this);
+            lead.setIcon(icon);
+            // Still shapes here: one turning shape (the profile's) is enough on the page.
+            lead.setSpin(false);
+            lead.setColors(mC.cardHigh, mC.primary, mC.onSurfaceVariant, mC.onPrimary);
+            view.addView(lead, lp(dp(44), dp(44)));
+
+            final LinearLayout col = new LinearLayout(PerformanceActivity.this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setPadding(dp(16), 0, dp(12), 0);
+            final LinearLayout titleLine = new LinearLayout(PerformanceActivity.this);
+            titleLine.setGravity(Gravity.CENTER_VERTICAL);
+            title = text(17, mC.onSurface, 550, 100f);
+            title.setText(titleText);
+            title.setFontFeatureSettings("tnum");
+            titleLine.addView(title);
+            badgeDefault = badge(getString(R.string.perf_badge_default), mC.primaryContainer,
+                    mC.onPrimaryContainer);
+            titleLine.addView(badgeDefault, lpMargins(WRAP, WRAP, 8, 0, 0, 0));
+            badgeActive = badge(getString(R.string.perf_badge_active), mC.primary, mC.onPrimary);
+            titleLine.addView(badgeActive, lpMargins(WRAP, WRAP, 8, 0, 0, 0));
+            col.addView(titleLine);
+            desc = text(14, mC.onSurfaceVariant, 400, 100f);
+            desc.setText(descText);
+            col.addView(desc, lpMargins(MATCH, WRAP, 0, 2, 0, 0));
+            pills = new PerfWidgets.Pills(PerformanceActivity.this);
+            col.addView(pills, lpMargins(dp(136), dp(6), 0, 8, 0, 2));
+            view.addView(col, new LinearLayout.LayoutParams(0, WRAP, 1f));
+
+            radio = new PerfWidgets.Radio(PerformanceActivity.this);
+            view.addView(radio, lp(dp(20), dp(20)));
+        }
+
+        void update(boolean sel, boolean isDefault, boolean isActive, boolean animated) {
+            final boolean changed = selected == null || selected != sel;
+            selected = sel;
+            final int on = sel ? mC.onSecondaryContainer : mC.onSurface;
+            bg.setColor(sel ? mC.secondaryContainer : mC.card);
+            title.setTextColor(on);
+            desc.setTextColor(sel ? on : mC.onSurfaceVariant);
+            badgeDefault.setVisibility(isDefault ? View.VISIBLE : View.GONE);
+            badgeActive.setVisibility(isActive ? View.VISIBLE : View.GONE);
+            pills.set(level, mC.primary, sel
+                    ? PerfWidgets.withAlpha(mC.onSecondaryContainer, 0.18f)
+                    : (mC.night ? mC.cardHigh : PerfWidgets.withAlpha(mC.onSurface, 0.1f)));
+            radio.setColors(mC.onSurfaceVariant, mC.primary);
+            if (changed) {
+                lead.setSelectedShape(sel, animated);
+                radio.setChecked(sel, animated);
+                setCorner(sel ? dp(28) : 0, animated);
+            }
+            view.setSelected(sel);
+        }
+
+        private void setCorner(float target, boolean animated) {
+            if (cornerAnim != null) cornerAnim.cancel();
+            if (corner < 0 || !animated || !PerfWidgets.motionOn()) {
+                corner = target;
+                applyCorner();
+                return;
+            }
+            cornerAnim = ValueAnimator.ofFloat(corner, target);
+            cornerAnim.setDuration(450);
+            cornerAnim.setInterpolator(PerfWidgets.SPRING);
+            cornerAnim.addUpdateListener(a -> {
+                corner = (float) a.getAnimatedValue();
+                applyCorner();
+            });
+            cornerAnim.start();
+        }
+
+        private void applyCorner() {
+            final float t = Math.max(outerTop, corner), b = Math.max(outerBottom, corner);
+            final float[] radii = {t, t, t, t, b, b, b, b};
+            bg.setCornerRadii(radii);
+            mask.setCornerRadii(radii);
+            view.invalidate();
+        }
+    }
+
     // ---- state -----------------------------------------------------------------------
 
     private void select(String id) {
@@ -854,11 +1258,30 @@ public class PerformanceActivity extends Activity {
         refresh(true);
     }
 
+    private boolean profilePending() {
+        return !mSelected.equals(mActive);
+    }
+
+    private boolean memoryPending() {
+        return mZramSel != mZramActive || mWbSel != mWbActive;
+    }
+
+    /** "Not now" on the floating bar: back to what this start runs with. */
+    private void keepCurrent() {
+        mSelected = mActive;
+        mZramSel = mZramActive;
+        mWbSel = mWbActive;
+        mAck = false;
+        mAckBox.setChecked(false);
+        refresh(true);
+    }
+
     private void refresh(boolean animated) {
         final PerfProfiles.Profile active = mSoc.get(mActive);
         final PerfProfiles.Profile sel = mSoc.get(mSelected);
         final boolean pending = !sel.id.equals(active.id);
         for (Row r : mRows) r.update(animated);
+        refreshMemory(animated);
 
         mGauge.setLevel(active.level, active.oc, PerfWidgets.iconFor(active.id),
                 pending ? sel.level : -1, animated);
@@ -887,20 +1310,22 @@ public class PerformanceActivity extends Activity {
             mLiveCap[i].setText(getString(R.string.perf_cap, active.cap[i]));
         }
 
-        // Floating bar: shown while another profile than the active one is picked.
-        final int bg = sel.oc ? mC.errorContainer : mC.primaryContainer;
-        final int fg = sel.oc ? mC.onErrorContainer : mC.onPrimaryContainer;
+        // Floating bar: shown while another profile than the active one, or other memory
+        // settings than this start's, wait for a restart. A profile takes the bar first.
+        final boolean oc = pending && sel.oc;
+        final int bg = oc ? mC.errorContainer : mC.primaryContainer;
+        final int fg = oc ? mC.onErrorContainer : mC.onPrimaryContainer;
         mBar.setBackground(shape(bg, dp(34)));
-        mBarIcon.setIcon(PerfWidgets.iconFor(sel.id));
+        mBarIcon.setIcon(pending ? PerfWidgets.iconFor(sel.id) : PerfWidgets.ICON_RAM);
         mBarIcon.setColors(bg, PerfWidgets.withAlpha(fg, 0.12f), fg, fg);
         mBarIcon.setSelectedShape(true, false);
-        mBarName.setText(sel.title);
+        if (pending) mBarName.setText(sel.title); else mBarName.setText(R.string.ram_bar_title);
         mBarName.setTextColor(fg);
         ((TextView) mBar.findViewWithTag("sub")).setTextColor(fg);
         ((ImageView) mBar.findViewWithTag("keep")).setImageDrawable(
                 new PerfWidgets.IconDrawable(PerfWidgets.ICON_CLOSE, fg));
-        tintPill(mBarRestart, sel.oc ? mC.error : mC.primary, sel.oc ? mC.onError : mC.onPrimary);
-        showBar(pending && !mSheetShown, animated);
+        tintPill(mBarRestart, oc ? mC.error : mC.primary, oc ? mC.onError : mC.onPrimary);
+        showBar((pending || memoryPending()) && !mSheetShown, animated);
     }
 
     private void showBar(boolean show, boolean animated) {
@@ -936,7 +1361,17 @@ public class PerformanceActivity extends Activity {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(mCloseSheet);
         }
         final PerfProfiles.Profile sel = mSoc.get(mSelected);
-        if (show) {
+        if (show && !profilePending()) {
+            mSheetTitle.setText(R.string.ram_sheet_title);
+            mSheetBody.setText(getString(R.string.ram_sheet_body, zramLabel(mZramSel),
+                    wbLabel(mWbSel)));
+            mSheetIcon.setColors(mC.primaryContainer, mC.primaryContainer,
+                    mC.onPrimaryContainer, mC.onPrimaryContainer);
+            mSheetIcon.setIcon(PerfWidgets.ICON_RAM);
+            mSheetIcon.setSelectedShape(false, false);
+            mAckRow.setVisibility(View.GONE);
+            updateSheetButton();
+        } else if (show) {
             final String name = getString(sel.title);
             if (sel.oc) {
                 mSheetTitle.setText(R.string.perf_sheet_oc_title);
@@ -955,7 +1390,7 @@ public class PerformanceActivity extends Activity {
             mAckRow.setVisibility(sel.oc ? View.VISIBLE : View.GONE);
             updateSheetButton();
         }
-        showBar(!show && !sel.id.equals(mActive), true);
+        showBar(!show && (profilePending() || memoryPending()), true);
 
         final boolean anim = PerfWidgets.motionOn();
         mScrim.animate().cancel();
@@ -982,17 +1417,26 @@ public class PerformanceActivity extends Activity {
 
     private void updateSheetButton() {
         final PerfProfiles.Profile sel = mSoc.get(mSelected);
-        final boolean enabled = !sel.oc || mAck;
-        tintPill(mSheetConfirm, sel.oc ? mC.error : mC.primary, sel.oc ? mC.onError : mC.onPrimary);
+        final boolean oc = profilePending() && sel.oc;
+        final boolean enabled = !oc || mAck;
+        tintPill(mSheetConfirm, oc ? mC.error : mC.primary, oc ? mC.onError : mC.onPrimary);
         mSheetConfirm.setEnabled(enabled);
         mSheetConfirm.setAlpha(enabled ? 1f : 0.38f);
     }
 
     private void confirmRestart() {
         final PerfProfiles.Profile sel = mSoc.get(mSelected);
-        if (sel.oc && !mAck) return;
-        PerfProfiles.choose(sel.id);
-        Log.i(TAG, "profile " + sel.id + " chosen, restarting");
+        final boolean profile = profilePending();
+        if (profile && sel.oc && !mAck) return;
+        if (profile) {
+            PerfProfiles.choose(sel.id);
+            Log.i(TAG, "profile " + sel.id + " chosen");
+        }
+        if (memoryPending()) {
+            PerfProfiles.Memory.choose(mZramSel, mWbSel);
+            Log.i(TAG, "zram " + mZramSel + "%, swap to storage " + mWbSel + " MB chosen");
+        }
+        Log.i(TAG, "restarting");
         showSheet(false);
         mBar.setVisibility(View.INVISIBLE);
         mOverlay.setVisibility(View.VISIBLE);
@@ -1062,6 +1506,7 @@ public class PerformanceActivity extends Activity {
     }
 
     private void updateLive() {
+        updateRam();
         final PerfProfiles.Profile active = mSoc.get(mActive);
         final int[] khz = {
             readInt("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"),
