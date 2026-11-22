@@ -67,6 +67,27 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- Settings > Network & internet > VoLTE (experimental), listed there by Settings
+             itself (IA_SETTINGS tile). -->
+        <activity
+            android:name=".VolteActivity"
+            android:label="@string/volte_title"
+            android:icon="@drawable/ic_settings_volte"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+            </intent-filter>
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.wireless" />
+            <meta-data
+                android:name="com.android.settings.icon"
+                android:resource="@drawable/ic_settings_volte" />
+            <meta-data
+                android:name="com.android.settings.summary"
+                android:resource="@string/volte_tile_summary" />
+        </activity>
+
         <provider
             android:name=".PerfSummaryProvider"
             android:authorities="org.lineageos.settings.exynos.performance"

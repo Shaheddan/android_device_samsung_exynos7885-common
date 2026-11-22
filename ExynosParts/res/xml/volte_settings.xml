@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+
+     VoLTE (experimental): intro, the switch and the IMS status as one grouped card, footer.
+     The switch is not persisted by androidx; it lives in persist.exynos.volte.
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.android.settingslib.widget.TopIntroPreference
+        android:key="volte_intro"
+        android:title="@string/volte_intro" />
+
+    <PreferenceCategory
+        android:key="category_volte"
+        android:title="@string/category_volte">
+
+        <org.lineageos.settings.exynos.ChargingSwitchPreference
+            android:key="volte_enabled"
+            android:icon="@drawable/ic_volte"
+            android:title="@string/volte_switch_title"
+            android:summary="@string/volte_switch_summary"
+            android:persistent="false" />
+
+        <org.lineageos.settings.exynos.VolteStatusPreference
+            android:key="volte_status"
+            android:icon="@drawable/ic_volte_status"
+            android:title="@string/volte_status_title"
+            android:selectable="false" />
+
+    </PreferenceCategory>
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="volte_footer"
+        android:title="@string/volte_footer"
+        android:selectable="false" />
+</PreferenceScreen>
