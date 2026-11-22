@@ -9,3 +9,4 @@ persist.exynos.ram.zram         u:object_r:exynos_perf_prop:s0 exact string
 persist.exynos.ram.wb           u:object_r:exynos_perf_prop:s0 exact string
 exynos.ram.zram                 u:object_r:exynos_perf_prop:s0 exact string
 exynos.ram.wb                   u:object_r:exynos_perf_prop:s0 exact string
+persist.exynos.volte            u:object_r:exynos_perf_prop:s0 exact string

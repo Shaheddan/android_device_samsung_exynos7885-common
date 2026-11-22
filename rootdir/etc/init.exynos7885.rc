@@ -772,6 +772,14 @@ on property:exynos.perf.request=oc2-trial
 # boot, after /data is up. "0" means nothing chosen yet: this phone's default. What is
 # used ends up in exynos.ram.zram and exynos.ram.wb for the page to show. Android's
 # ZramWriteback job (config_zramWriteback) then moves idle pages to the file once a day.
+# VoLTE (experimental): Settings > Network & internet > VoLTE sets persist.exynos.volte.
+# Android's own "VoLTE available" override may only be set by vendor init, so map it here.
+on property:persist.exynos.volte=1
+    setprop persist.dbg.volte_avail_ovr 1
+
+on property:persist.exynos.volte=0
+    setprop persist.dbg.volte_avail_ovr 0
+
 on property:exynos.ram.zram=0
     setprop exynos.ram.zram ${ro.vendor.exynos.ram.zram_default:-50}
 

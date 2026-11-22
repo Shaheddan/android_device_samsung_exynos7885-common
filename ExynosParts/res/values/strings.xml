@@ -196,4 +196,24 @@
     <string name="ram_bar_title">New memory settings</string>
     <string name="ram_sheet_title">Restart to use the new memory settings?</string>
     <string name="ram_sheet_body">Compressed RAM %1$s, swap to storage %2$s. Your phone restarts now, so save anything you are working on first.</string>
+
+    <!-- Settings > Network & internet > VoLTE (experimental) -->
+    <string name="volte_title">VoLTE (experimental)</string>
+    <string name="volte_tile_summary">4G calling for SIMs and carriers that support it</string>
+    <string name="volte_intro">Makes 4G calling (VoLTE) available through PhhIms, the open-source IMS service in this ROM. It is experimental: it only works if your SIM is activated for VoLTE and your carrier lets the phone find its IMS server. As long as the phone can\'t register, calls keep using 2G/3G like before.</string>
+    <string name="category_volte">VoLTE</string>
+    <string name="volte_switch_title">Allow VoLTE</string>
+    <string name="volte_switch_summary">Shows VoLTE / 4G calling in your SIM settings, even if your carrier\'s settings hide it</string>
+    <string name="volte_status_title">IMS registration</string>
+    <string name="volte_status_no_sim">No SIM</string>
+    <string name="volte_status_checking">Checking\u2026</string>
+    <string name="volte_status_line">SIM %1$d (%2$s): %3$s</string>
+    <string name="volte_status_registered">registered, calls can use VoLTE</string>
+    <string name="volte_status_registering">registering\u2026</string>
+    <string name="volte_status_not_registered">not registered, calls use 2G/3G</string>
+    <string name="volte_restart_title">Restart to apply?</string>
+    <string name="volte_restart_message">The change takes effect after a restart. Then check that VoLTE / 4G calling is on in Settings > Network &amp; internet > SIMs.</string>
+    <string name="volte_restart_now">Restart now</string>
+    <string name="volte_restart_later">Later</string>
+    <string name="volte_footer">If calls go wrong with VoLTE allowed (no sound, calls that drop or don\'t connect), turn it off again: calls go back to 2G/3G as before.</string>
 </resources>
