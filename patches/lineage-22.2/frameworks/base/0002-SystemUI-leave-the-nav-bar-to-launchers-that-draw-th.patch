@@ -1,0 +1,99 @@
+From a1495c69bf939098cae9442e7489dcfb132b8d94 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Sun, 22 Nov 2026 18:14:08 +0330
+Subject: [PATCH] SystemUI: leave the nav bar to launchers that draw their own
+
+This build turns taskbar/navbar unification off so SystemUI draws the
+phone's navigation bar, which the launcher built here and One UI Home
+need. Pixel Launcher is built with unification on and adds its own
+navigation bar window as soon as the user unlocks. WindowManager allows
+only one, so its TouchInteractionService crashed on every start and the
+Recents button did nothing.
+
+When Recents belongs to such a launcher, hand the bar to it through the
+taskbar delegate, the same way a stock build does.
+---
+ .../NavigationBarControllerImpl.java          | 36 ++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java b/packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java
+index d2b1d544..6e90ecf7 100644
+--- a/packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java
++++ b/packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java
+@@ -21,6 +21,7 @@ import static com.android.systemui.shared.recents.utilities.Utilities.isLargeScr
+ import static com.android.wm.shell.Flags.enableTaskbarNavbarUnification;
+ import static com.android.wm.shell.Flags.enableTaskbarOnPhones;
+ 
++import android.content.ComponentName;
+ import android.content.Context;
+ import android.content.pm.ActivityInfo;
+ import android.content.res.Configuration;
+@@ -99,6 +100,19 @@ public class NavigationBarControllerImpl implements
+      * tablets) is considered not a handheld device.
+      */
+     @VisibleForTesting boolean mIsPhone;
++    /**
++     * Whether the launcher that provides Recents adds the phone's navigation bar window
++     * itself (taskbar/navbar unification compiled in), see {@link #supportsTaskbar()}.
++     */
++    private final boolean mRecentsDrawsNavBar;
++
++    /**
++     * Prebuilt launchers built with taskbar/navbar unification on. They add their own
++     * navigation bar window on phones no matter what this build's flags say.
++     */
++    private static final String[] LAUNCHERS_WITH_OWN_NAVBAR = {
++            "com.google.android.apps.nexuslauncher",
++    };
+ 
+     /** A displayId - nav bar maps. */
+     @VisibleForTesting
+@@ -151,9 +165,24 @@ public class NavigationBarControllerImpl implements
+                 taskStackChangeListeners);
+         mIsLargeScreen = isLargeScreen(mContext);
+         mIsPhone = determineIfPhone(mContext, deviceStateManager);
++        mRecentsDrawsNavBar = recentsLauncherDrawsNavBar(mContext);
+         dumpManager.registerDumpable(this);
+     }
+ 
++    private static boolean recentsLauncherDrawsNavBar(Context context) {
++        final ComponentName recents = ComponentName.unflattenFromString(
++                context.getString(R.string.config_recentsComponentName));
++        if (recents == null) {
++            return false;
++        }
++        for (String pkg : LAUNCHERS_WITH_OWN_NAVBAR) {
++            if (pkg.equals(recents.getPackageName())) {
++                return true;
++            }
++        }
++        return false;
++    }
++
+     private boolean determineIfPhone(Context context, DeviceStateManager deviceStateManager) {
+         if (android.hardware.devicestate.feature.flags.Flags.deviceStatePropertyMigration()) {
+             return !Utils.isDeviceFoldable(context.getResources(), deviceStateManager);
+@@ -267,7 +296,11 @@ public class NavigationBarControllerImpl implements
+         // Enable for tablets, unfolded state on a foldable device, (non handheld AND flag is set),
+         // or handheld when enableTaskbarOnPhones() returns true.
+         boolean foldedOrPhone = !mIsPhone || enableTaskbarOnPhones();
+-        return mIsLargeScreen || (foldedOrPhone && enableTaskbarNavbarUnification());
++        // This build turns unification off so SystemUI draws the phone's bar for launchers
++        // that need it (ours, One UI Home). A launcher that draws its own would then crash:
++        // WindowManager allows only one navigation bar window. Leave the bar to it instead.
++        return mIsLargeScreen || (foldedOrPhone && enableTaskbarNavbarUnification())
++                || mRecentsDrawsNavBar;
+     }
+ 
+     private final CommandQueue.Callbacks mCommandQueueCallbacks = new CommandQueue.Callbacks() {
+@@ -484,6 +517,7 @@ public class NavigationBarControllerImpl implements
+     @Override
+     public void dump(@NonNull PrintWriter pw, @NonNull String[] args) {
+         pw.println("mIsLargeScreen=" + mIsLargeScreen);
++        pw.println("mRecentsDrawsNavBar=" + mRecentsDrawsNavBar);
+         pw.println("mNavMode=" + mNavMode);
+         for (int i = 0; i < mNavigationBars.size(); i++) {
+             if (i > 0) {
+-- 
+2.43.0
+
