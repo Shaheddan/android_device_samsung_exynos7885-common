@@ -1,0 +1,77 @@
+From 882c6046f4698c89daf1d15b4bcc0c05f160f724 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Mon, 23 Nov 2026 15:03:36 +0330
+Subject: [PATCH] sehradiomanager: work with rilds that only serve ISehRadio
+ 2.0/2.1
+
+The A30s rild registers vendor.samsung.hardware.radio ISehRadio 2.1 for
+slot1 and slot2, so ISehRadio 2.2 getService() comes back null and
+sehradiomanager crashes on its first call. Nobody then sets the SEH
+response functions, and rild keeps logging
+  sehRadioService[0]->mSehRadioIndication == NULL
+
+Get the 2.0 interface instead, which every version serves, and send
+the vendor configuration only when the 2.2 cast works. Same change as
+HyperRamzey's crDroid 16 tree for the A30s.
+---
+ ril/sehradiomanager/sehradiomanager.cpp | 30 ++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 6 deletions(-)
+
+diff --git a/ril/sehradiomanager/sehradiomanager.cpp b/ril/sehradiomanager/sehradiomanager.cpp
+index d2318bb..520e346 100644
+--- a/ril/sehradiomanager/sehradiomanager.cpp
++++ b/ril/sehradiomanager/sehradiomanager.cpp
+@@ -21,6 +21,8 @@
+ #include <android/binder_process.h>
+ 
+ #include <aidl/vendor/samsung/hardware/radio/network/ISehRadioNetwork.h>
++#include <vendor/samsung/hardware/radio/2.0/ISehRadio.h>
++#include <vendor/samsung/hardware/radio/2.1/ISehRadio.h>
+ #include <vendor/samsung/hardware/radio/2.2/ISehRadio.h>
+ 
+ using namespace std::chrono_literals;
+@@ -38,7 +40,8 @@ using android::hidl::base::V1_0::IBase;
+ using aidl::vendor::samsung::hardware::radio::network::ISehRadioNetwork;
+ using aidl::vendor::samsung::hardware::radio::network::implementation::SehRadioNetworkIndication;
+ using aidl::vendor::samsung::hardware::radio::network::implementation::SehRadioNetworkResponse;
+-using vendor::samsung::hardware::radio::V2_2::ISehRadio;
++typedef vendor::samsung::hardware::radio::V2_2::ISehRadio ISehRadioV2_2;
++using V2_0ISehRadio = vendor::samsung::hardware::radio::V2_0::ISehRadio;
+ using vendor::samsung::hardware::radio::V2_2::SehVendorConfiguration;
+ using vendor::samsung::hardware::radio::V2_2::implementation::SehRadioIndication;
+ using vendor::samsung::hardware::radio::V2_2::implementation::SehRadioResponse;
+@@ -109,11 +112,26 @@ int main() {
+             auto config = LoadConfiguration<SehVendorConfiguration>(content);
+             auto samsungIndication = sp<SehRadioIndication>::make();
+             auto samsungResponse = sp<SehRadioResponse>::make();
+-            auto svc = ISehRadio::getService(slotName);
+-            svc->setResponseFunction(samsungResponse, samsungIndication);
+-            svc->setVendorSpecificConfiguration(0x3232, hidl_vec(config));
+-            svc->linkToDeath(gHidlHalDeathRecipient, 0);
+-            svc->incStrong(gHidlHalDeathRecipient.get());
++            // Ask for the 2.0 interface, which every rild version serves. Some
++            // (the A30s one) only register 2.1, and a 2.2 getService() is null.
++            auto svcBase = V2_0ISehRadio::getService(slotName);
++            if (svcBase == nullptr) {
++                LOG(ERROR) << "ISehRadio service not found for " << slotName
++                           << "; skipping slot (rild not up yet?)";
++                continue;
++            }
++            svcBase->setResponseFunction(samsungResponse, samsungIndication);
++            // setVendorSpecificConfiguration() only exists in 2.2. On a rild
++            // without it the cast fails and withDefault() gives a null sp.
++            sp<ISehRadioV2_2> svc22 = ISehRadioV2_2::castFrom(svcBase).withDefault(nullptr);
++            if (svc22 != nullptr) {
++                svc22->setVendorSpecificConfiguration(0x3232, hidl_vec(config));
++            } else {
++                LOG(WARNING) << "ISehRadio 2.2 not served by rild; "
++                            << "skipping vendor config (FW_READY)";
++            }
++            svcBase->linkToDeath(gHidlHalDeathRecipient, 0);
++            svcBase->incStrong(gHidlHalDeathRecipient.get());
+         }
+         LOG(INFO) << "Done (slot" << slot << ")";
+     }
+-- 
+2.43.0
+
