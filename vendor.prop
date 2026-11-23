@@ -21,6 +21,9 @@ ro.sf.blurs_are_expensive=1
 ## RIL
 vendor.sec.rild.libpath=/vendor/lib64/libsec-ril.so
 vendor.sec.rild.libpath2=/vendor/lib64/libsec-ril-dsds.so
+# Preferred network type on a fresh install: LTE/3G/2G (9) for both SIMs. Without it
+# Android falls back to 3G preferred, and VoLTE can't work there.
+ro.telephony.default_network=9,9
 
 # Wifi direct
 wifi.direct.interface=p2p0
