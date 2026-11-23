@@ -8,3 +8,6 @@ set_prop(hal_camera_default, vendor_camera_prop)
 get_prop(hal_camera_default, vendor_factory_prop)
 
 binder_call(hal_camera_default, system_server)
+
+# libcsc does its colour conversion on the m2m1shot scaler (/dev/m2m1shot_scaler0)
+allow hal_camera_default m2m1shot_device:chr_file rw_file_perms;
