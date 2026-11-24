@@ -1,0 +1,102 @@
+From 31afded63bb16f61234bcf602b0ca3dd2eae46de Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Tue, 24 Nov 2026 17:20:58 +0330
+Subject: [PATCH] touch: register what the manifest declares, skip what it
+ doesn't
+
+Some A40s ship a Zinitix touch panel (bt532) instead of the Imagis
+one, and its driver has no hover_enable. The manifest declares
+IStylusMode for the A40, the HAL only registered it when cmd_list
+listed it, so system_server sat in waitForDeclaredService() for
+IStylusMode forever and the phone bootlooped into recovery:
+  ServiceManagerCppClient: Waited one second for
+  vendor.lineage.touch.IStylusMode/default
+
+Register every declared instance and let unsupported features read
+back as off; that also covers a driver that publishes cmd_list late.
+A feature the driver lists but the manifest doesn't declare is now
+skipped with a warning instead of aborting the whole HAL.
+---
+ aidl/touch/service.cpp | 63 +++++++++++++++++-------------------------
+ 1 file changed, 26 insertions(+), 37 deletions(-)
+
+diff --git a/aidl/touch/service.cpp b/aidl/touch/service.cpp
+index c17366e..0496b43 100644
+--- a/aidl/touch/service.cpp
++++ b/aidl/touch/service.cpp
+@@ -21,46 +21,35 @@ using aidl::vendor::lineage::touch::KeyDisabler;
+ using aidl::vendor::lineage::touch::StylusMode;
+ using aidl::vendor::lineage::touch::TouchscreenGesture;
+ 
+-int main() {
+-    binder_status_t status = STATUS_OK;
+-
+-    ABinderProcess_setThreadPoolMaxThreadCount(0);
+-
+-    std::shared_ptr<GloveMode> gm = ndk::SharedRefBase::make<GloveMode>();
+-    if (gm->isSupported()) {
+-        const std::string gm_instance = std::string(GloveMode::descriptor) + "/default";
+-        status = AServiceManager_addService(gm->asBinder().get(), gm_instance.c_str());
+-        CHECK_EQ(status, STATUS_OK) << "Failed to add service " << gm_instance << " " << status;
+-    }
+-
+-    std::shared_ptr<HighTouchPollingRate> htpr = ndk::SharedRefBase::make<HighTouchPollingRate>();
+-    if (htpr->isSupported()) {
+-        const std::string htpr_instance =
+-                std::string(HighTouchPollingRate::descriptor) + "/default";
+-        status = AServiceManager_addService(htpr->asBinder().get(), htpr_instance.c_str());
+-        CHECK_EQ(status, STATUS_OK) << "Failed to add service " << htpr_instance << " " << status;
+-    }
+-
+-    std::shared_ptr<KeyDisabler> kd = ndk::SharedRefBase::make<KeyDisabler>();
+-    if (kd->isSupported()) {
+-        const std::string kd_instance = std::string(KeyDisabler::descriptor) + "/default";
+-        status = AServiceManager_addService(kd->asBinder().get(), kd_instance.c_str());
+-        CHECK_EQ(status, STATUS_OK) << "Failed to add service " << kd_instance << " " << status;
++// Register what the VINTF manifest declares, whether the touch driver lists the
++// feature or not. A declared instance that never registers makes system_server's
++// ServiceManager.waitForDeclaredService() wait forever and the phone never finishes
++// booting: an A40 with the Zinitix panel instead of the Imagis one has no
++// hover_enable, so IStylusMode never showed up. The same happens when the driver
++// publishes cmd_list late. Unsupported features just read back as off.
++// A feature the driver lists but the manifest doesn't declare is skipped:
++// servicemanager would refuse it and the old CHECK took the whole HAL down.
++template <typename T>
++static void registerIfDeclared(const std::shared_ptr<T>& service) {
++    const std::string instance = std::string(T::descriptor) + "/default";
++    const bool supported = service->isSupported();
++    if (!AServiceManager_isDeclared(instance.c_str())) {
++        if (supported) LOG(WARNING) << instance << " is supported but not declared, skipping";
++        return;
+     }
++    if (!supported) LOG(INFO) << instance << " is declared but not supported, registering anyway";
++    binder_status_t status = AServiceManager_addService(service->asBinder().get(), instance.c_str());
++    CHECK_EQ(status, STATUS_OK) << "Failed to add service " << instance << " " << status;
++}
+ 
+-    std::shared_ptr<StylusMode> sm = ndk::SharedRefBase::make<StylusMode>();
+-    if (sm->isSupported()) {
+-        const std::string sm_instance = std::string(StylusMode::descriptor) + "/default";
+-        status = AServiceManager_addService(sm->asBinder().get(), sm_instance.c_str());
+-        CHECK_EQ(status, STATUS_OK) << "Failed to add service " << sm_instance << " " << status;
+-    }
++int main() {
++    ABinderProcess_setThreadPoolMaxThreadCount(0);
+ 
+-    std::shared_ptr<TouchscreenGesture> tg = ndk::SharedRefBase::make<TouchscreenGesture>();
+-    if (tg->isSupported()) {
+-        const std::string tg_instance = std::string(TouchscreenGesture::descriptor) + "/default";
+-        status = AServiceManager_addService(tg->asBinder().get(), tg_instance.c_str());
+-        CHECK_EQ(status, STATUS_OK) << "Failed to add service " << tg_instance << " " << status;
+-    }
++    registerIfDeclared(ndk::SharedRefBase::make<GloveMode>());
++    registerIfDeclared(ndk::SharedRefBase::make<HighTouchPollingRate>());
++    registerIfDeclared(ndk::SharedRefBase::make<KeyDisabler>());
++    registerIfDeclared(ndk::SharedRefBase::make<StylusMode>());
++    registerIfDeclared(ndk::SharedRefBase::make<TouchscreenGesture>());
+ 
+     ABinderProcess_joinThreadPool();
+     return EXIT_FAILURE;  // should not reach
+-- 
+2.43.0
+
