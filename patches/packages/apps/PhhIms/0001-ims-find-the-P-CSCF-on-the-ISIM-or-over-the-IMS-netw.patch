@@ -1,0 +1,183 @@
+From 8530b442b0879781d20371d53372a3fa32bc9ab7 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Mon, 23 Nov 2026 01:28:55 +0330
+Subject: [PATCH] ims: find the P-CSCF on the ISIM or over the IMS network
+
+Older Samsung RILs (Exynos7885 with a Shannon 327 modem) bring the IMS
+PDN up but leave the data call's P-CSCF list empty and only pass it to
+Samsung's own IMS daemon, so registration never started.
+
+When LinkProperties has no P-CSCF, try the ISIM's EF P-CSCF records
+first, then the 3GPP IMS domain looked up on the IMS network itself
+(its DNS is often only reachable over the IMS APN), and only then the
+old default-network lookup and persist.ims.pcscf_fallback.
+---
+ .../main/java/me/phh/sip/ImsNetworkState.kt   | 103 +++++++++++++-----
+ app/src/main/java/me/phh/sip/SipHandler.kt    |  16 +++
+ 2 files changed, 93 insertions(+), 26 deletions(-)
+
+diff --git a/app/src/main/java/me/phh/sip/ImsNetworkState.kt b/app/src/main/java/me/phh/sip/ImsNetworkState.kt
+index 1ee0f21..476f2a7 100644
+--- a/app/src/main/java/me/phh/sip/ImsNetworkState.kt
++++ b/app/src/main/java/me/phh/sip/ImsNetworkState.kt
+@@ -95,39 +95,17 @@ internal object ImsNetworkState {
+         mcc: String,
+         preferredPcscf: InetAddress? = null,
+         ipVersionPolicy: SipIpVersionPolicy = SipIpVersionPolicy.ANY,
++        network: Network? = null,
++        isimPcscfs: List<String> = emptyList(),
+     ): ImsNetworkEndpointResolution {
+         val pcscfs = getPcscfServers(lp, ipVersionPolicy)
+         val pcscf = preferredPcscf ?: if (pcscfs.isNotEmpty()) {
+             pcscfs[0]
+         } else {
+-            // RIL did not provide P-CSCF via LinkProperties. Try standard
+-            // 3GPP DNS discovery (TS 23.003 §13.2): resolve the well-known
+-            // IMS domain for this PLMN.
+-            val dnsFallback = try {
+-                InetAddress.getAllByName(
+-                    "ims.mnc${mnc}.mcc${mcc}.pub.3gppnetwork.org",
+-                ).firstOrNull(ipVersionPolicy::accepts)
+-            } catch (t: Throwable) {
+-                null
+-            } ?: try {
+-                InetAddress.getAllByName(
+-                    "ims.mnc${mnc}.mcc${mcc}.3gppnetwork.org",
+-                ).firstOrNull(ipVersionPolicy::accepts)
+-            } catch (t: Throwable) {
+-                null
+-            } ?: android.os.SystemProperties
+-                .get("persist.ims.pcscf_fallback", "")
+-                .takeIf { it.isNotEmpty() }
+-                ?.let {
+-                    try {
+-                        InetAddress.getByName(it)
+-                    } catch (t: Throwable) {
+-                        null
+-                    }
+-                }
++            // RIL did not provide P-CSCF via LinkProperties.
++            val dnsFallback = discoverPcscf(tag, network, mnc, mcc, isimPcscfs, ipVersionPolicy)
+ 
+             if (dnsFallback != null) {
+-                Rlog.w(tag, "No P-CSCF from RIL, using fallback: $dnsFallback")
+                 dnsFallback
+             } else {
+                 Rlog.w(tag, "No P-CSCF and all fallbacks failed, waiting for onLinkPropertiesChanged")
+@@ -144,6 +122,79 @@ internal object ImsNetworkState {
+         return ImsNetworkEndpointResolution.Success(pcscf, localAddr)
+     }
+ 
++    /**
++     * P-CSCF discovery for when the RIL put none in LinkProperties. Older Samsung RILs
++     * (Exynos7885 with a Shannon 327 modem, for one) never fill the data call's P-CSCF
++     * list and pass it only to Samsung's own IMS daemon, so we have to find it ourselves:
++     *  1. the ISIM's EF P-CSCF records (3GPP TS 31.103 4.2.8), where carriers can provision it
++     *  2. the 3GPP IMS domain (TS 23.003 13.2) looked up on the IMS network itself, since its
++     *     DNS servers are often only reachable over the IMS APN
++     *  3. the same names on the default network, as before
++     *  4. persist.ims.pcscf_fallback
++     */
++    fun discoverPcscf(
++        tag: String,
++        network: Network?,
++        mnc: String,
++        mcc: String,
++        isimPcscfs: List<String>,
++        ipVersionPolicy: SipIpVersionPolicy,
++    ): InetAddress? {
++        for (raw in isimPcscfs) {
++            val host = isimPcscfHost(raw) ?: continue
++            val addr = lookup(network, host, ipVersionPolicy) ?: lookup(null, host, ipVersionPolicy)
++            if (addr != null) {
++                Rlog.w(tag, "No P-CSCF from RIL, using the ISIM's $host: $addr")
++                return addr
++            }
++            Rlog.w(tag, "ISIM P-CSCF $host did not resolve")
++        }
++        val names = listOf(
++            "ims.mnc${mnc}.mcc${mcc}.pub.3gppnetwork.org",
++            "ims.mnc${mnc}.mcc${mcc}.3gppnetwork.org",
++        )
++        if (network != null) {
++            for (name in names) {
++                val addr = lookup(network, name, ipVersionPolicy) ?: continue
++                Rlog.w(tag, "No P-CSCF from RIL, $name on the IMS network: $addr")
++                return addr
++            }
++        }
++        for (name in names) {
++            val addr = lookup(null, name, ipVersionPolicy) ?: continue
++            Rlog.w(tag, "No P-CSCF from RIL, $name on the default network: $addr")
++            return addr
++        }
++        val prop = android.os.SystemProperties.get("persist.ims.pcscf_fallback", "")
++        if (prop.isNotEmpty()) {
++            val addr = lookup(network, prop, ipVersionPolicy) ?: lookup(null, prop, ipVersionPolicy)
++            if (addr != null) {
++                Rlog.w(tag, "No P-CSCF from RIL, using persist.ims.pcscf_fallback: $addr")
++                return addr
++            }
++        }
++        return null
++    }
++
++    /**
++     * An ISIM P-CSCF record is "<address type><address>" (00 FQDN, 01 IPv4, 02 IPv6) and
++     * reaches us as text, so only textual addresses are usable; anything else is skipped.
++     */
++    fun isimPcscfHost(raw: String?): String? {
++        if (raw.isNullOrEmpty()) return null
++        val body = if (raw[0].code in 0..2) raw.substring(1) else raw
++        val host = body.trim().trimEnd('\u0000')
++        return host.takeIf { it.isNotEmpty() && it.all { c -> c.code in 0x21..0x7e } }
++    }
++
++    private fun lookup(network: Network?, host: String, ipVersionPolicy: SipIpVersionPolicy): InetAddress? =
++        try {
++            val all = if (network != null) network.getAllByName(host) else InetAddress.getAllByName(host)
++            all.firstOrNull(ipVersionPolicy::accepts)
++        } catch (t: Throwable) {
++            null
++        }
++
+     fun ratName(rat: Int): String =
+         when (rat) {
+             TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+diff --git a/app/src/main/java/me/phh/sip/SipHandler.kt b/app/src/main/java/me/phh/sip/SipHandler.kt
+index 3ff2405..5691e53 100644
+--- a/app/src/main/java/me/phh/sip/SipHandler.kt
++++ b/app/src/main/java/me/phh/sip/SipHandler.kt
+@@ -2085,6 +2085,20 @@ fun onWfcDisabled(reason: String) {
+     }
+ 
+ 
++    /**
++     * P-CSCF addresses provisioned on the ISIM. TelephonyManager.getIsimPcscf() is hidden
++     * and needs READ_PRIVILEGED_PHONE_STATE, which this privileged app holds.
++     */
++    private fun readIsimPcscfs(): List<String> =
++        try {
++            (TelephonyManager::class.java.getMethod("getIsimPcscf").invoke(subTelephonyManager) as? Array<*>)
++                ?.filterIsInstance<String>()
++                .orEmpty()
++        } catch (t: Throwable) {
++            Rlog.d(TAG, "ISIM P-CSCF not readable: $t")
++            emptyList()
++        }
++
+     private fun prepareImsEndpointForConnect(): Boolean {
+         abandonnedBecauseOfNoPcscf = false
+         resetRegistrationStateForConnect()
+@@ -2109,6 +2123,8 @@ fun onWfcDisabled(reason: String) {
+             mcc = mcc,
+             preferredPcscf = preferredPcscf,
+             ipVersionPolicy = carrierSettings.ipVersionPolicy,
++            network = network,
++            isimPcscfs = readIsimPcscfs(),
+         )) {
+             is ImsNetworkEndpointResolution.Success -> {
+                 localAddr = endpoint.localAddr
+-- 
+2.43.0
+
