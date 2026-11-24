@@ -1,4 +1,4 @@
-From d59c613b0f591aad1c5eda28d69515d8a274e135 Mon Sep 17 00:00:00 2001
+From ecc5c40b60f7e71a036c85402835438c3f60062f Mon Sep 17 00:00:00 2001
 From: shahed <jamshidalinezhadian@gmail.com>
 Date: Sat, 31 Oct 2026 16:17:30 +0330
 Subject: [PATCH] fingerprint: drive the A30s optical sensor's panel
@@ -26,9 +26,9 @@ bf27aa4, c42e05d, ddf8141, ccd85dc, 7390806, d96c284, 6a5372f, 945f7f7,
 other sensor types, and cancel_on_enroll_completion keeps working.
 ---
  aidl/fingerprint/Legacy2Aidl.h |   5 +
- aidl/fingerprint/Session.cpp   | 331 +++++++++++++++++++++++++++++++--
+ aidl/fingerprint/Session.cpp   | 329 +++++++++++++++++++++++++++++++--
  aidl/fingerprint/Session.h     |  26 ++-
- 3 files changed, 348 insertions(+), 14 deletions(-)
+ 3 files changed, 346 insertions(+), 14 deletions(-)
 
 diff --git a/aidl/fingerprint/Legacy2Aidl.h b/aidl/fingerprint/Legacy2Aidl.h
 index c2e20cd..6fbde7b 100644
@@ -47,23 +47,23 @@ index c2e20cd..6fbde7b 100644
      hat.user_id = authToken.userId;
      hat.authenticator_id = authToken.authenticatorId;
 diff --git a/aidl/fingerprint/Session.cpp b/aidl/fingerprint/Session.cpp
-index 9b17f41..b6e3f58 100644
+index d272205..41b09cf 100644
 --- a/aidl/fingerprint/Session.cpp
 +++ b/aidl/fingerprint/Session.cpp
-@@ -15,6 +15,12 @@
+@@ -15,8 +15,12 @@
  
  #include <dirent.h>
  #include <endian.h>
 +#include <errno.h>
-+#include <fcntl.h>
+ #include <fcntl.h>
 +#include <glob.h>
+ #include <poll.h>
 +#include <string.h>
 +#include <sys/stat.h>
-+#include <unistd.h>
+ #include <unistd.h>
  #include <thread>
  
- using namespace ::android::fingerprint::samsung;
-@@ -62,29 +68,243 @@ ndk::ScopedAStatus Session::revokeChallenge(int64_t challenge) {
+@@ -106,29 +110,243 @@ ndk::ScopedAStatus Session::revokeChallenge(int64_t challenge) {
      return ndk::ScopedAStatus::ok();
  }
  
@@ -317,7 +317,7 @@ index 9b17f41..b6e3f58 100644
  
      *out = SharedRefBase::make<CancellationSignal>(this);
      return ndk::ScopedAStatus::ok();
-@@ -93,10 +313,22 @@ ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
+@@ -137,10 +355,22 @@ ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
  ndk::ScopedAStatus Session::authenticate(int64_t operationId,
                                           std::shared_ptr<ICancellationSignal>* out) {
      LOG(INFO) << "authenticate";
@@ -340,7 +340,7 @@ index 9b17f41..b6e3f58 100644
          mCb->onError(Error::UNABLE_TO_PROCESS, error);
      }
  
-@@ -199,6 +431,26 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t /*x*/,
+@@ -243,6 +473,26 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t /*x*/,
                                            float /*minor*/, float /*major*/) {
      LOG(INFO) << "onPointerDown";
  
@@ -365,9 +365,9 @@ index 9b17f41..b6e3f58 100644
 +    setFingerprintIllum(true);
 +
      if (FingerprintHalProperties::request_touch_event().value_or(false)) {
+         waitForMaskBrightness();
          mHal.request(SEM_REQUEST_TOUCH_EVENT, 2);
-     }
-@@ -211,6 +463,15 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t /*x*/,
+@@ -256,6 +506,15 @@ ndk::ScopedAStatus Session::onPointerDown(int32_t /*pointerId*/, int32_t /*x*/,
  ndk::ScopedAStatus Session::onPointerUp(int32_t /*pointerId*/) {
      LOG(INFO) << "onPointerUp";
  
@@ -383,7 +383,7 @@ index 9b17f41..b6e3f58 100644
      if (FingerprintHalProperties::request_touch_event().value_or(false)) {
          mHal.request(SEM_REQUEST_TOUCH_EVENT, 1);
      }
-@@ -272,8 +533,22 @@ ndk::ScopedAStatus Session::setIgnoreDisplayTouches(bool /*shouldIgnore*/) {
+@@ -317,8 +576,22 @@ ndk::ScopedAStatus Session::setIgnoreDisplayTouches(bool /*shouldIgnore*/) {
      return ndk::ScopedAStatus::ok();
  }
  
@@ -406,7 +406,7 @@ index 9b17f41..b6e3f58 100644
  
      if (ret == 0) {
          mCb->onError(Error::CANCELED, 0 /* vendorCode */);
-@@ -416,8 +691,16 @@ void Session::notify(const fingerprint_msg_t* msg) {
+@@ -461,8 +734,16 @@ void Session::notify(const fingerprint_msg_t* msg) {
                  const_cast<fingerprint_msg_t*>(msg)->data.enroll.samples_remaining =
                          100 - msg->data.enroll.samples_remaining;
              }
@@ -425,7 +425,7 @@ index 9b17f41..b6e3f58 100644
                      mHal.ss_fingerprint_cancel();
                  }
              }
-@@ -439,6 +722,7 @@ void Session::notify(const fingerprint_msg_t* msg) {
+@@ -484,6 +765,7 @@ void Session::notify(const fingerprint_msg_t* msg) {
              LOG(DEBUG) << "onAuthenticated(fid=" << msg->data.authenticated.finger.fid
                         << ", gid=" << msg->data.authenticated.finger.gid << ")";
              if (msg->data.authenticated.finger.fid != 0) {
@@ -433,7 +433,7 @@ index 9b17f41..b6e3f58 100644
                  const hw_auth_token_t hat = msg->data.authenticated.hat;
                  HardwareAuthToken authToken;
                  translate(hat, authToken);
-@@ -466,7 +750,28 @@ void Session::notify(const fingerprint_msg_t* msg) {
+@@ -511,7 +793,28 @@ void Session::notify(const fingerprint_msg_t* msg) {
  }
  
  void Session::onCaptureReady() {
@@ -507,3 +507,6 @@ index 8ef41b1..717cf83 100644
  
      Error VendorErrorFilter(int32_t error, int32_t* vendorCode);
      AcquiredInfo VendorAcquiredFilter(int32_t info, int32_t* vendorCode);
+-- 
+2.43.0
+
