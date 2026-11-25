@@ -1441,16 +1441,21 @@ public class PerformanceActivity extends Activity {
         mBar.setVisibility(View.INVISIBLE);
         mOverlay.setVisibility(View.VISIBLE);
         mOverlay.animate().alpha(1f).setDuration(PerfWidgets.motionOn() ? 450 : 0).start();
-        mHandler.postDelayed(() -> {
+        // reboot() only returns once the phone is going down, and shutting down can take more
+        // than 5 s (the shutdown broadcast alone may wait 10 s). Called on the UI thread it made
+        // Android report Exynos Parts as not responding during every restart.
+        mHandler.postDelayed(() -> new Thread(() -> {
             try {
                 getSystemService(PowerManager.class).reboot(null);
             } catch (RuntimeException e) {
                 Log.e(TAG, "reboot failed", e);
-                mOverlay.animate().alpha(0f).withEndAction(() -> mOverlay.setVisibility(View.GONE)).start();
-                Toast.makeText(this, R.string.perf_restart_failed, Toast.LENGTH_LONG).show();
-                refresh(false);
+                runOnUiThread(() -> {
+                    mOverlay.animate().alpha(0f).withEndAction(() -> mOverlay.setVisibility(View.GONE)).start();
+                    Toast.makeText(this, R.string.perf_restart_failed, Toast.LENGTH_LONG).show();
+                    refresh(false);
+                });
             }
-        }, 1200);
+        }, "perf-reboot").start(), 1200);
     }
 
     // ---- fallback banner -------------------------------------------------------------
