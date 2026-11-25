@@ -86,7 +86,9 @@ public class VolteSettingsFragment extends PreferenceFragmentCompat
                 .setMessage(R.string.volte_restart_message)
                 .setPositiveButton(R.string.volte_restart_now, (d, w) -> {
                     final PowerManager pm = c.getSystemService(PowerManager.class);
-                    if (pm != null) pm.reboot(null);
+                    // reboot() blocks until the phone goes down (can be over 5 s): not on the
+                    // UI thread, or Exynos Parts shows as not responding while it restarts.
+                    if (pm != null) new Thread(() -> pm.reboot(null), "volte-reboot").start();
                 })
                 .setNegativeButton(R.string.volte_restart_later, null)
                 .show();
