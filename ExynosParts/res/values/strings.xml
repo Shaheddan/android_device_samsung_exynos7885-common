@@ -216,4 +216,27 @@
     <string name="volte_restart_now">Restart now</string>
     <string name="volte_restart_later">Later</string>
     <string name="volte_footer">If calls go wrong with VoLTE allowed (no sound, calls that drop or don\'t connect), turn it off again: calls go back to 2G/3G as before.</string>
+    <!-- Lock screen styles (Settings > Display) -->
+    <string name="lockscreen_title">Lock screen styles</string>
+    <string name="lockscreen_tile_summary">CaveArt clocks, depth effects and notifications on the lock screen</string>
+    <string name="lockscreen_intro">Adds CaveArt\'s lock screen clocks, depth wallpaper effects and lock screen notifications. CaveArt hooks into System UI through Vector, an Xposed framework, and NeoZygisk; turning this on installs both as KernelSU-Next modules. While it is off, nothing touches System UI.</string>
+    <string name="category_lockscreen">CaveArt</string>
+    <string name="lockscreen_switch_title">Use CaveArt on the lock screen</string>
+    <string name="lockscreen_switch_summary">Installs Vector and NeoZygisk; CaveArt is switched on for System UI after a restart</string>
+    <string name="lockscreen_status_title">Status</string>
+    <string name="lockscreen_state_off">Off</string>
+    <string name="lockscreen_state_requested">Starting\u2026</string>
+    <string name="lockscreen_state_installing">Installing NeoZygisk and Vector\u2026</string>
+    <string name="lockscreen_state_restart">Installed. Restart the phone to finish</string>
+    <string name="lockscreen_state_active">On: CaveArt is loaded into System UI</string>
+    <string name="lockscreen_state_failed">Something went wrong. Turn it off, restart, then try again</string>
+    <string name="lockscreen_state_no_vector">Vector is missing. Turn this off and on again</string>
+    <string name="lockscreen_state_no_ksu">KernelSU-Next isn\'t set up: install the KernelSU-Next manager, open it once, then try again</string>
+    <string name="lockscreen_state_removing">Turned off. The modules it added go away at the next restart</string>
+    <string name="lockscreen_open_title">Open CaveArt</string>
+    <string name="lockscreen_open_summary">Pick clock styles, wallpapers and effects</string>
+    <string name="lockscreen_restart_title">Restart now?</string>
+    <string name="lockscreen_restart_on">Vector and NeoZygisk start with the phone. After the restart, CaveArt is switched on for System UI by itself.</string>
+    <string name="lockscreen_restart_off">The modules this switch added are removed while the phone restarts.</string>
+    <string name="lockscreen_footer">Needs KernelSU-Next, with its manager opened at least once. CaveArt is made for Android 16 and 17; if System UI keeps crashing, turn this off. Modules you had installed yourself stay when you turn it off.\n\nCaveArt by shinichi-c. Vector and NeoZygisk by JingMatrix (GPL-3.0).</string>
 </resources>

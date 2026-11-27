@@ -1,0 +1,6 @@
+id=exynos_caveart
+name=Lock screen styles
+version=1.0
+versionCode=1
+author=shahed
+description=CaveArt on Vector + NeoZygisk for System UI. Added by Settings > Display > Lock screen styles; turn it off there to remove it.

@@ -10,3 +10,9 @@ persist.exynos.ram.wb           u:object_r:exynos_perf_prop:s0 exact string
 exynos.ram.zram                 u:object_r:exynos_perf_prop:s0 exact string
 exynos.ram.wb                   u:object_r:exynos_perf_prop:s0 exact string
 persist.exynos.volte            u:object_r:exynos_perf_prop:s0 exact string
+# Lock screen styles (Settings > Display): the switch, the setup's progress, and the
+# requests init.caveart.rc reacts to (set by Exynos Parts, state by the module)
+persist.exynos.caveart          u:object_r:exynos_perf_prop:s0 exact string
+persist.exynos.caveart.state    u:object_r:exynos_perf_prop:s0 exact string
+exynos.caveart.on               u:object_r:exynos_perf_prop:s0 exact string
+exynos.caveart.off              u:object_r:exynos_perf_prop:s0 exact string

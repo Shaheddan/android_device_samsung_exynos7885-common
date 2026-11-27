@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+
+     Lock screen styles: intro, the switch, its status and a shortcut to CaveArt as one
+     grouped card, footer. The switch is not persisted by androidx; it lives in
+     persist.exynos.caveart.
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.android.settingslib.widget.TopIntroPreference
+        android:key="lockscreen_intro"
+        android:title="@string/lockscreen_intro" />
+
+    <PreferenceCategory
+        android:key="category_lockscreen"
+        android:title="@string/category_lockscreen">
+
+        <org.lineageos.settings.exynos.ChargingSwitchPreference
+            android:key="caveart_enabled"
+            android:icon="@drawable/ic_settings_lockscreen"
+            android:title="@string/lockscreen_switch_title"
+            android:summary="@string/lockscreen_switch_summary"
+            android:persistent="false" />
+
+        <org.lineageos.settings.exynos.VolteStatusPreference
+            android:key="caveart_status"
+            android:icon="@drawable/ic_lockscreen_status"
+            android:title="@string/lockscreen_status_title"
+            android:selectable="false" />
+
+        <org.lineageos.settings.exynos.VolteStatusPreference
+            android:key="caveart_open"
+            android:icon="@drawable/ic_lockscreen_open"
+            android:title="@string/lockscreen_open_title"
+            android:summary="@string/lockscreen_open_summary" />
+
+    </PreferenceCategory>
+
+    <com.android.settingslib.widget.FooterPreference
+        android:key="lockscreen_footer"
+        android:title="@string/lockscreen_footer"
+        android:selectable="false" />
+</PreferenceScreen>

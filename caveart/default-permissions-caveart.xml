@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- CaveArt picks wallpapers from the phone's photos. -->
+<exceptions>
+    <exception package="com.android.CaveArt">
+        <permission name="android.permission.READ_MEDIA_IMAGES" fixed="false" />
+    </exception>
+</exceptions>
