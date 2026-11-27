@@ -1,0 +1,17 @@
+Lock screen styles: third-party parts built into this ROM
+
+CaveArt 5.0-Nudibranch (devbuild), com.android.CaveArt
+  by shinichi-c, built in with the author's permission
+  https://github.com/shinichi-c/CaveArt/tree/5.0-Nudibranch
+  CaveArt.apk.part00-02 = the author's app-release.apk split in three, unchanged
+  sha256 e0f5142a0d045968c75bc8ccb8821f41f1255cb50310ce6b3a9ce1718af3918d
+
+Vector v2.2 (3080-88f8e1fa), Vector.zip
+  by JingMatrix, GNU General Public License v3.0
+  https://github.com/JingMatrix/Vector  (release v2.2, unchanged)
+  sha256 9ee8323575d615f7b3f1076ff60b2a63a49390ef11881b52632311a37f6f79cc
+
+NeoZygisk v2.4 (289-08080ef), NeoZygisk.zip
+  by JingMatrix, GNU General Public License v3.0
+  https://github.com/JingMatrix/NeoZygisk  (release v2.4, unchanged)
+  sha256 93a1425c67bb89f58a0dcb9fc823ec93f6472214f221e667a70b67c6a6e061a1

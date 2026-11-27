@@ -19,6 +19,7 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             BypassService.refresh(context);
             PerfProfiles.onBootCompleted(context);
+            LockscreenSettingsFragment.onBootCompleted();
         }
     }
 }

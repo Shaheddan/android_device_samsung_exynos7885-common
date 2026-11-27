@@ -1,0 +1,123 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+// Lock screen styles (Settings > Display > Lock screen styles, in Exynos Parts).
+// CaveArt by shinichi-c, built in with his OK, runs on two KernelSU-Next modules by
+// JingMatrix: Vector (Xposed framework) and NeoZygisk (GPL-3.0, sources in NOTICE).
+// The app is always there; nothing hooks System UI until the switch is turned on, which
+// installs the exynos_caveart module below (it sets up the other two).
+
+// GitHub refuses files over 100 MB, so the 257 MB APK is kept in three parts and put
+// back together here. It goes in untouched, still signed by its developer, so his newer
+// builds install over it.
+genrule {
+    name: "CaveArt_apk",
+    srcs: [
+        "CaveArt.apk.part00",
+        "CaveArt.apk.part01",
+        "CaveArt.apk.part02",
+    ],
+    out: ["CaveArt.apk"],
+    cmd: "cat $(in) > $(out)",
+}
+
+// Untouched means no repacking: the dex stays compressed, so no preopt either (ART
+// compiles it on the phone like for an app from the Play Store).
+android_app_import {
+    name: "CaveArt",
+    apk: ":CaveArt_apk",
+    presigned: true,
+    preprocessed: true,
+    skip_preprocessed_apk_checks: true,
+    dex_preopt: {
+        enabled: false,
+    },
+    system_ext_specific: true,
+    required: [
+        "caveart_lockscreen_styles",
+        "default-permissions-caveart",
+    ],
+}
+
+// A10, A20 and A20e: CaveArt only fits in their system partition once the Google app and
+// Speech Services are left out (both can be installed from the Play Store).
+android_app_import {
+    name: "CaveArtSlim",
+    apk: ":CaveArt_apk",
+    presigned: true,
+    preprocessed: true,
+    skip_preprocessed_apk_checks: true,
+    dex_preopt: {
+        enabled: false,
+    },
+    system_ext_specific: true,
+    overrides: [
+        "Velvet",
+        "GoogleTTS",
+    ],
+    required: [
+        "caveart_lockscreen_styles",
+        "default-permissions-caveart",
+    ],
+}
+
+// Photos access for picking wallpapers, granted up front.
+prebuilt_etc {
+    name: "default-permissions-caveart",
+    src: "default-permissions-caveart.xml",
+    sub_dir: "default-permissions",
+    product_specific: true,
+}
+
+// The KernelSU-Next module the switch installs (module/), the two it sets up, and the
+// init triggers that run ksud for the switch.
+genrule {
+    name: "exynos_caveart_zip",
+    tools: ["soong_zip"],
+    srcs: ["module/*"],
+    out: ["exynos_caveart.zip"],
+    // every file of module/ at the top of the zip, as KernelSU-Next expects
+    cmd: "d=$$(dirname $$(echo $(in) | tr ' ' '\\n' | head -n 1)) && " +
+        "$(location soong_zip) -o $(out) -C $$d -D $$d",
+}
+
+prebuilt_etc {
+    name: "caveart_setup_module",
+    src: ":exynos_caveart_zip",
+    filename: "exynos_caveart.zip",
+    sub_dir: "caveart",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "caveart_neozygisk",
+    src: "NeoZygisk.zip",
+    sub_dir: "caveart",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "caveart_vector",
+    src: "Vector.zip",
+    sub_dir: "caveart",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "init.caveart.rc",
+    src: "init.caveart.rc",
+    sub_dir: "init",
+    system_ext_specific: true,
+}
+
+phony {
+    name: "caveart_lockscreen_styles",
+    required: [
+        "caveart_setup_module",
+        "caveart_neozygisk",
+        "caveart_vector",
+        "init.caveart.rc",
+    ],
+}

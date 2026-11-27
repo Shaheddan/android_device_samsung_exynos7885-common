@@ -1,0 +1,10 @@
+# Settings > Display > Lock screen styles (Exynos Parts) sets exynos.caveart.on or
+# exynos.caveart.off to a new value each time the switch is turned on or off.
+# ksud runs in KernelSU-Next's own domain, the same way KernelSU-Next starts it at boot.
+# On: install the exynos_caveart module, which sets up NeoZygisk, Vector and CaveArt.
+# Off: remove it; its uninstall.sh takes out what it added at the next restart.
+on property:exynos.caveart.on=*
+    exec_background u:r:ksu:s0 root -- /data/adb/ksud module install /system_ext/etc/caveart/exynos_caveart.zip
+
+on property:exynos.caveart.off=*
+    exec_background u:r:ksu:s0 root -- /data/adb/ksud module uninstall exynos_caveart

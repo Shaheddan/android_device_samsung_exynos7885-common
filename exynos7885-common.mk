@@ -139,6 +139,17 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ExynosParts
 
+# Lock screen styles: CaveArt, plus Vector and NeoZygisk for the switch in Settings >
+# Display to install (caveart/). The A10, A20 and A20e only have room for it without the
+# Google app and Speech Services, which CaveArtSlim leaves out.
+ifneq ($(filter a10 a20 a20e,$(TARGET_DEVICE)),)
+PRODUCT_PACKAGES += \
+    CaveArtSlim
+else
+PRODUCT_PACKAGES += \
+    CaveArt
+endif
+
 # hmt_ta_charge=0 pauses charging while the charger keeps powering the phone (charger
 # off, buck on), so a limit or a schedule holds the level: true bypass. Measured on the
 # A30: battery current +420 mA -> 0 mA with USB still online. EurekaV3 gives the A10
