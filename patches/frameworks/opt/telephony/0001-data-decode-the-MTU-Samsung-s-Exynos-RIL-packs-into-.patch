@@ -1,0 +1,69 @@
+From 40bf06bd683bbf4d6b3a4a3010c36dc3f8fa6090 Mon Sep 17 00:00:00 2001
+From: shahed <jamshidalinezhadian@gmail.com>
+Date: Fri, 27 Nov 2026 19:45:43 +0330
+Subject: [PATCH] data: decode the MTU Samsung's Exynos RIL packs into one int
+
+The Galaxy A10-A40 RIL reports the MTU as the same 16-bit value twice
+(0x05000500 for 1280, 0x05B805B8 for 1464). ConnectivityService refuses
+that for the interface and the routes end up with an MTU of 65520, so TCP
+builds segments bigger than the link takes. Over the IPsec-protected IMS
+connection the INVITE of an outgoing VoLTE call (~1950 bytes) is the first
+message that needs a full-size segment: it never gets through and the call
+hangs at "calling". Incoming calls only send small replies, so they worked.
+
+Keep the low 16 bits when the value is too big to be an MTU, and treat
+anything else out of range as not reported. Checked on an A40 on Team
+Telecom Armenia by forcing the routes to 1280 by hand: outgoing VoLTE calls
+connect.
+---
+ .../internal/telephony/data/DataNetwork.java  | 20 +++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/src/java/com/android/internal/telephony/data/DataNetwork.java b/src/java/com/android/internal/telephony/data/DataNetwork.java
+index 4d85b5f..014cb28 100644
+--- a/src/java/com/android/internal/telephony/data/DataNetwork.java
++++ b/src/java/com/android/internal/telephony/data/DataNetwork.java
+@@ -2890,6 +2890,22 @@ public class DataNetwork extends StateMachine {
+         return failCause;
+     }
+ 
++    /**
++     * Samsung's Exynos RIL (Galaxy A10-A40) hands over the MTU as the same 16-bit value twice
++     * in one int: 0x05000500 for 1280, 0x05B805B8 for 1464. ConnectivityService refuses that
++     * for the interface and the routes end up with 65520, so TCP sizes its segments for a link
++     * it doesn't have. Over the IPsec-protected IMS connection the first full-size segment, the
++     * INVITE of an outgoing VoLTE call, then never gets through and the call hangs. Keep the
++     * low 16 bits when the value is too big for an MTU; anything still out of range counts as
++     * "not reported" and falls back to the APN / carrier default below.
++     */
++    private static int sanitizeMtu(int mtu) {
++        if (mtu > 0xFFFF) {
++            mtu &= 0xFFFF;
++        }
++        return (mtu >= 576 && mtu <= 9000) ? mtu : 0;
++    }
++
+     /**
+      * Update data network based on the latest {@link DataCallResponse}.
+      *
+@@ -2953,7 +2969,7 @@ public class DataNetwork extends StateMachine {
+         }
+ 
+         // For backwards compatibility, use getMtu() if getMtuV4() is not available.
+-        int mtuV4 = response.getMtuV4() > 0 ? response.getMtuV4() : response.getMtu();
++        int mtuV4 = sanitizeMtu(response.getMtuV4() > 0 ? response.getMtuV4() : response.getMtu());
+ 
+         if (mtuV4 <= 0) {
+             // Use back up value from data profile.
+@@ -2966,7 +2982,7 @@ public class DataNetwork extends StateMachine {
+         }
+ 
+         // For backwards compatibility, use getMtu() if getMtuV6() is not available.
+-        int mtuV6 = response.getMtuV6() > 0 ? response.getMtuV6() : response.getMtu();
++        int mtuV6 = sanitizeMtu(response.getMtuV6() > 0 ? response.getMtuV6() : response.getMtu());
+         if (mtuV6 <= 0) {
+             // Use back up value from data profile.
+             if (mDataProfile.getApnSetting() != null) {
+-- 
+2.43.0
+
